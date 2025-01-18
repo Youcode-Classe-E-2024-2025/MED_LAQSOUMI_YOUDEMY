@@ -25,9 +25,9 @@
 <body class="font-sans font-normal antialiased bg-gray-50">
     <!-- Header Section -->
     <div class="h-24 w-full bg-primary">
-        <div class="container mx-auto h-full flex items-center justify-between px-6">
-            <a href="/" class="text-xl font-extrabold italic tracking-tighter text-white uppercase">Youdemy</a>
-            <a href="/" class="text-white hover:text-gray-200">Back to Home</a>
+    <div class="container mx-auto h-full flex items-center justify-between px-6">
+            <a href="index.php?action=home" class="text-xl font-extrabold italic tracking-tighter text-white uppercase">Youdemy</a>
+            <a href="index.php?action=home" class="text-white hover:text-gray-200">Back to Home</a>
         </div>
     </div>
 
@@ -77,7 +77,7 @@
                 </button>
                 <div class="text-center mt-4">
                     <span class="text-gray-600 text-sm">Already have an account?</span>
-                    <a href="/login" class="text-primary hover:text-secondary text-sm ml-1">Login here</a>
+                    <a href="index.php?action=login" class="text-primary hover:text-secondary text-sm ml-1">Login here</a>
                 </div>
             </form>
         </div>

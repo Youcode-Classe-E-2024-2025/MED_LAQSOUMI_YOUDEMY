@@ -8,7 +8,7 @@ $action = isset($_GET['action']) ? $_GET['action'] : 'home';
 
 switch ($action) {
     case 'home':
-        require_once 'views/index.php';
+        require_once  'views/index.php';
         break;
     case 'login':
         require_once 'views/login.php';

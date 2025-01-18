@@ -26,8 +26,8 @@
     <!-- Header Section -->
     <div class="h-24 w-full bg-primary">
         <div class="container mx-auto h-full flex items-center justify-between px-6">
-            <a href="/" class="text-xl font-extrabold italic tracking-tighter text-white uppercase">Youdemy</a>
-            <a href="/" class="text-white hover:text-gray-200">Back to Home</a>
+            <a href="index.php?action=home" class="text-xl font-extrabold italic tracking-tighter text-white uppercase">Youdemy</a>
+            <a href="index.php?action=home" class="text-white hover:text-gray-200">Back to Home</a>
         </div>
     </div>
 
@@ -52,14 +52,13 @@
                         <input type="checkbox" class="h-4 w-4 text-primary border-gray-300 rounded">
                         <label class="ml-2 text-sm text-gray-600">Remember me</label>
                     </div>
-                    <a href="/forgot-password" class="text-sm text-primary hover:text-secondary">Forgot Password?</a>
                 </div>
                 <button type="submit" class="w-full bg-primary text-white py-3 rounded-lg hover:bg-secondary transition-colors">
                     Login
                 </button>
                 <div class="text-center mt-4">
                     <span class="text-gray-600 text-sm">Don't have an account?</span>
-                    <a href="/register" class="text-primary hover:text-secondary text-sm ml-1">Register now</a>
+                    <a href="index.php?action=register" class="text-primary hover:text-secondary text-sm ml-1">Register now</a>
                 </div>
             </form>
         </div>

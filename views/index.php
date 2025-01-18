@@ -28,10 +28,9 @@
     <!-- Header Section -->
     <div class="h-24 w-full absolute top-0 left-0 bg-primary"></div>
     <div class="h-24 z-20 relative container mx-auto flex items-center justify-between px-6">
-        <a href="/" class="text-xl font-extrabold italic tracking-tighter text-white uppercase">Youdemy</a>
+        <a href="index.php?action=home" class="text-xl font-extrabold italic tracking-tighter text-white uppercase">Youdemy</a>
         <div x-data="{ mobileMenu : false }" class="text-white text-lg fixed bottom-0 left-0 lg:relative p-6 lg:p-0 w-full lg:w-auto max-w-lg">
             <div x-bind:class="{ 'flex' : mobileMenu, 'hidden' : !mobileMenu }" class="lg:flex flex-col lg:flex-row items-center justify-center bg-primary lg:bg-transparent pt-6 pb-8 lg:p-0 -mb-6 lg:m-0 rounded-t-3xl shadow-2xl lg:shadow-none">
-                <a href="<?php echo $_SERVER['PHP_SELF']; ?>" class="my-2 lg:ml-6">Home</a>
                 <a href="index.php?action=courses" class="my-2 lg:ml-6">Courses</a>
                 <a href="index.php?action=login" class="my-2 lg:ml-6">Login</a>
                 <a href="index.php?action=register" class="my-2 lg:ml-6">Register</a>
@@ -143,9 +142,9 @@
                 <div>
                     <h3 class="text-xl font-bold mb-4">Learn</h3>
                     <ul class="space-y-2">
-                        <li><a href="/courses.html" class="hover:text-primary">All Courses</a></li>
-                        <li><a href="/login.html" class="hover:text-primary">Login</a></li>
-                        <li><a href="/register.html" class="hover:text-primary">Register</a></li>
+                        <li><a href="index.php?action=courses" class="hover:text-primary">All Courses</a></li>
+                        <li><a href="index.php?action=login" class="hover:text-primary">Login</a></li>
+                        <li><a href="index.php?action=register" class="hover:text-primary">Register</a></li>
                     </ul>
                 </div>
                 <div>
