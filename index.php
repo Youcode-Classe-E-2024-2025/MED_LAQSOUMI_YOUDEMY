@@ -8,7 +8,7 @@ require_once 'controllers/AdminController.php';
 $request = $_SERVER['REQUEST_URI'];
 
 switch ($request) {
-    case '/':
+    case 'views/home.php':
         // Show home page
         break;
     case '/login':
