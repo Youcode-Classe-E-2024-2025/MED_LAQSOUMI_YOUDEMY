@@ -62,7 +62,7 @@
         <div class="relative z-10 text-center text-white text-center mx-auto max-w-xl">
             <h1 class="text-3xl lg:text-7xl mb-4 font-bold uppercase italic">Learn Without Limits</h1>
             <p class="text-xl mb-6">Start, switch, or advance your career with thousands of courses from expert teachers</p>
-            <a href="/courses.html" class="inline-block rounded-full border-2 border-white text-lg px-8 py-3 hover:bg-white hover:text-primary">Browse Courses</a>
+            <a href="index.php?action=courses" class="inline-block rounded-full border-2 border-white text-lg px-8 py-3 hover:bg-white hover:text-primary">Browse Courses</a>
         </div>
         <div class="absolute inset-0 bg-gradient-to-r from-primary to-secondary opacity-90"></div>
     </div>
@@ -71,22 +71,22 @@
     <div class="container mx-auto px-6 py-24">
         <h2 class="text-5xl mb-12 font-bold uppercase italic text-center">Top Categories</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <a href="/courses.html" class="bg-gray-50 p-6 rounded-lg hover:shadow-lg transition-shadow">
+            <a href="index.php?action=courses" class="bg-gray-50 p-6 rounded-lg hover:shadow-lg transition-shadow">
                 <div class="text-primary text-4xl mb-4">💻</div>
                 <h3 class="text-xl font-bold mb-2">Development</h3>
                 <p class="text-gray-600">Learn programming and web development</p>
             </a>
-            <a href="/courses.html" class="bg-gray-50 p-6 rounded-lg hover:shadow-lg transition-shadow">
+            <a href="index.php?action=courses" class="bg-gray-50 p-6 rounded-lg hover:shadow-lg transition-shadow">
                 <div class="text-primary text-4xl mb-4">📊</div>
                 <h3 class="text-xl font-bold mb-2">Business</h3>
                 <p class="text-gray-600">Expand your business knowledge</p>
             </a>
-            <a href="/courses.html" class="bg-gray-50 p-6 rounded-lg hover:shadow-lg transition-shadow">
+            <a href="index.php?action=courses" class="bg-gray-50 p-6 rounded-lg hover:shadow-lg transition-shadow">
                 <div class="text-primary text-4xl mb-4">🎨</div>
                 <h3 class="text-xl font-bold mb-2">Design</h3>
                 <p class="text-gray-600">Master design principles and tools</p>
             </a>
-            <a href="/courses.html" class="bg-gray-50 p-6 rounded-lg hover:shadow-lg transition-shadow">
+            <a href="index.php?action=courses" class="bg-gray-50 p-6 rounded-lg hover:shadow-lg transition-shadow">
                 <div class="text-primary text-4xl mb-4">📱</div>
                 <h3 class="text-xl font-bold mb-2">Marketing</h3>
                 <p class="text-gray-600">Learn digital marketing strategies</p>
@@ -125,7 +125,7 @@
         <div class="relative z-10 text-center text-white text-center mx-auto max-w-xl">
             <h2 class="text-3xl lg:text-5xl mb-4 font-bold uppercase italic">Become an Instructor</h2>
             <p class="text-xl mb-6">Share your knowledge and earn money teaching on Youdemy</p>
-            <a href="/register.html" class="inline-block rounded-full border-2 border-white text-lg px-8 py-3 hover:bg-white hover:text-primary">Start Teaching</a>
+            <a href="index.php?action=register" class="inline-block rounded-full border-2 border-white text-lg px-8 py-3 hover:bg-white hover:text-primary">Start Teaching</a>
         </div>
     </div>
 

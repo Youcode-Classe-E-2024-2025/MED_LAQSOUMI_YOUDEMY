@@ -16,6 +16,9 @@ switch ($action) {
     case 'register':
         require_once 'views/register.php';
         break;
+    case 'courses':
+        require_once 'views/course.php';
+        break;
     default:
         require_once 'views/404.php';
         break;
