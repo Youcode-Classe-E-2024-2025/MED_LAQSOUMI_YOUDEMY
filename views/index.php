@@ -31,10 +31,10 @@
         <a href="/" class="text-xl font-extrabold italic tracking-tighter text-white uppercase">Youdemy</a>
         <div x-data="{ mobileMenu : false }" class="text-white text-lg fixed bottom-0 left-0 lg:relative p-6 lg:p-0 w-full lg:w-auto max-w-lg">
             <div x-bind:class="{ 'flex' : mobileMenu, 'hidden' : !mobileMenu }" class="lg:flex flex-col lg:flex-row items-center justify-center bg-primary lg:bg-transparent pt-6 pb-8 lg:p-0 -mb-6 lg:m-0 rounded-t-3xl shadow-2xl lg:shadow-none">
-                <a href="/" class="my-2 lg:ml-6">Home</a>
-                <a href="/courses.html" class="my-2 lg:ml-6">Courses</a>
-                <a href="/login.html" class="my-2 lg:ml-6">Login</a>
-                <a href="/register.html" class="my-2 lg:ml-6">Register</a>
+                <a href="<?php echo $_SERVER['PHP_SELF']; ?>" class="my-2 lg:ml-6">Home</a>
+                <a href="index.php?action=courses" class="my-2 lg:ml-6">Courses</a>
+                <a href="index.php?action=login" class="my-2 lg:ml-6">Login</a>
+                <a href="index.php?action=register" class="my-2 lg:ml-6">Register</a>
             </div>
             <!-- Mobile Menu Button -->
             <button x-on:click="mobileMenu = !mobileMenu" type="button" class="lg:hidden bg-primary text-white rounded-3xl w-full py-4 text-center uppercase text-sm shadow-2xl lg:shadow-none focus:outline-none">

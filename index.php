@@ -1,31 +1,24 @@
 <?php
 // index.php
-require_once 'config/database.php';
-require_once 'controllers/UtilisateurController.php';
-require_once 'controllers/CoursController.php';
-require_once 'controllers/AdminController.php';
+// require_once 'config/database.php';
+// require_once 'controllers/UtilisateurController.php';
+// require_once 'controllers/CoursController.php';
+// require_once 'controllers/AdminController.php';
+$action = isset($_GET['action']) ? $_GET['action'] : 'home';
 
-$request = $_SERVER['REQUEST_URI'];
-
-switch ($request) {
-    case 'views/home.php':
-        // Show home page
+switch ($action) {
+    case 'home':
+        require_once 'views/index.php';
         break;
-    case '/login':
-        $controller = new UtilisateurController();
-        $controller->login();
+    case 'login':
+        require_once 'views/login.php';
         break;
-    case '/register':
-        $controller = new UtilisateurController();
-        $controller->register();
+    case 'register':
+        require_once 'views/register.php';
         break;
-    case '/courses':
-        $controller = new CoursController();
-        $controller->index();
-        break;
-    // Add more routes as needed
     default:
-        http_response_code(404);
-        require 'views/404.php';
+        require_once 'views/404.php';
         break;
 }
+
+?>
