@@ -108,33 +108,6 @@ $userName = isset($_SESSION['name']) ? $_SESSION['name'] : '';
             </a>
         </div>
     </div>
-
-    <!-- Featured Courses -->
-    <div class="bg-gray-50 py-24">
-        <div class="container mx-auto px-6">
-            <h2 class="text-5xl mb-12 font-bold uppercase italic text-center">Featured Courses</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                <!-- Course Card Template -->
-                <div class="bg-white rounded-lg overflow-hidden shadow-lg">
-                    <img src="/api/placeholder/400/250" alt="Course thumbnail" class="w-full h-48 object-cover">
-                    <div class="p-6">
-                        <div class="text-sm text-primary mb-2">Development</div>
-                        <h3 class="text-xl font-bold mb-2">Complete Web Development Course</h3>
-                        <p class="text-gray-600 mb-4">Learn web development from scratch with practical projects</p>
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center">
-                                <img src="/api/placeholder/40/40" alt="Teacher" class="w-8 h-8 rounded-full mr-2">
-                                <span class="text-sm">John Doe</span>
-                            </div>
-                            <span class="text-primary font-bold">$49.99</span>
-                        </div>
-                    </div>
-                </div>
-                <!-- Repeat course cards -->
-            </div>
-        </div>
-    </div>
-
     <!-- Call to Action for Teachers -->
     <div class="relative w-full bg-primary py-32">
         <div class="relative z-10 text-center text-white text-center mx-auto max-w-xl">

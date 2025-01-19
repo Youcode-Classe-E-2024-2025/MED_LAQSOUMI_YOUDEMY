@@ -1,11 +1,18 @@
+<?php
+session_start();
+
+$role = isset($_SESSION['role']) ? $_SESSION['role'] : null;
+$userName = isset($_SESSION['name']) ? $_SESSION['name'] : '';
+
+
+
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="x-ua-compatible" content="ie=edge">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Courses - Youdemy</title>
-    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Course - Youdemy</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@200;300;400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -24,17 +31,49 @@
         }
     </script>
 </head>
-<body class="font-sans font-normal antialiased bg-gray-50 text-gray-900">
+<body class="font-sans font-normal antialiased bg-white text-gray-900">
     <!-- Header Section -->
     <div class="h-24 w-full absolute top-0 left-0 bg-primary"></div>
     <div class="h-24 z-20 relative container mx-auto flex items-center justify-between px-6">
         <a href="index.php?action=home" class="text-xl font-extrabold italic tracking-tighter text-white uppercase">Youdemy</a>
         <div x-data="{ mobileMenu: false }" class="text-white text-lg fixed bottom-0 left-0 lg:relative p-6 lg:p-0 w-full lg:w-auto max-w-lg">
             <div x-bind:class="{ 'flex': mobileMenu, 'hidden': !mobileMenu }" class="lg:flex flex-col lg:flex-row items-center justify-center bg-primary lg:bg-transparent pt-6 pb-8 lg:p-0 -mb-6 lg:m-0 rounded-t-3xl shadow-2xl lg:shadow-none">
-                <a href="index.php?action=courses" class="my-2 lg:ml-6">Courses</a>
-                <a href="index.php?action=login" class="my-2 lg:ml-6">Login</a>
-                <a href="index.php?action=register" class="my-2 lg:ml-6">Register</a>
+                <?php if ($role === 'etudiant'): ?>
+                    <span class="my-2 lg:ml-6">Welcome, <?= htmlspecialchars($userName) ?></span>
+                    <a href="index.php?action=myCourses" class="my-2 lg:ml-6">My Courses</a>
+                    <a href="index.php?action=profile" class="my-2 lg:ml-6">Profile</a>
+                    <a href="index.php?action=logout" class="my-2 lg:ml-6">Logout</a>
+                <?php elseif ($role === 'teacher'): ?>
+                    <span class="my-2 lg:ml-6">Welcome, <?= htmlspecialchars($userName) ?></span>
+                    <a href="index.php?action=teacherDashboard" class="my-2 lg:ml-6">Dashboard</a>
+                    <a href="index.php?action=createCourse" class="my-2 lg:ml-6">Create Course</a>
+                    <a href="index.php?action=profile" class="my-2 lg:ml-6">Profile</a>
+                    <a href="index.php?action=logout" class="my-2 lg:ml-6">Logout</a>
+                <?php else: ?>
+                    <a href="index.php?action=courses" class="my-2 lg:ml-6">Courses</a>
+                    <a href="index.php?action=loginPage" class="my-2 lg:ml-6">Login</a>
+                    <a href="index.php?action=registerPage" class="my-2 lg:ml-6">Register</a>
+                <?php endif; ?>
             </div>
+            <!-- Mobile Menu Button -->
+            <button @click="mobileMenu = !mobileMenu" type="button" class="lg:hidden bg-primary text-white rounded-3xl w-full py-4 text-center uppercase text-sm shadow-2xl lg:shadow-none focus:outline-none">
+                <template x-if="!mobileMenu">
+                    <div class="flex items-center justify-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16"></path>
+                        </svg>
+                         Menu
+                    </div>
+                </template>
+                <template x-if="mobileMenu">
+                    <div class="flex items-center justify-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                         Close
+                    </div>
+                </template>
+            </button>
         </div>
     </div>
 
@@ -89,7 +128,7 @@
     <div class="container mx-auto px-6 py-12">
         <!-- Results Count and Sort -->
         <div class="flex justify-between items-center mb-8">
-            <p class="text-gray-600">Showing 1-9 of 56 courses</p>
+            <p class="text-gray-600">Showing <?= ($currentPage - 1) * $perPage + 1 ?>-<?= min($currentPage * $perPage, $totalCourses) ?> of <?= $totalCourses ?> courses</p>
             <select class="px-4 py-2 border rounded-lg focus:outline-none focus:border-primary">
                 <option value="newest">Newest First</option>
                 <option value="popular">Most Popular</option>
@@ -100,41 +139,42 @@
 
         <!-- Course Cards Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-            <!-- Course Card -->
+            <?php foreach ($courses as $course) : ?>
             <div class="bg-white rounded-lg overflow-hidden shadow-lg">
-                <img src="/api/placeholder/400/250" alt="Course thumbnail" class="w-full h-48 object-cover">
+                <img src="<?= htmlspecialchars($course['image']) ?>" alt="Course thumbnail" class="w-full h-48 object-cover">
                 <div class="p-6">
-                    <div class="flex flex-wrap gap-2 mb-2">
-                        <span class="px-2 py-1 bg-blue-100 text-primary rounded-full text-xs">Development</span>
-                        <span class="px-2 py-1 bg-blue-100 text-primary rounded-full text-xs">Web</span>
-                    </div>
-                    <h3 class="text-xl font-bold mb-2">Complete Web Development Course</h3>
-                    <p class="text-gray-600 mb-4">Learn web development from scratch with practical projects</p>
+                    <h3 class="text-xl font-bold mb-2"><?= htmlspecialchars($course['titre']) ?></h3>
+                    <p class="text-gray-600 mb-4"><?= htmlspecialchars(substr($course['description'], 0, 100)) ?>...</p>
                     <div class="flex items-center justify-between">
-                        <div class="flex items-center">
-                            <img src="/api/placeholder/40/40" alt="Teacher" class="w-8 h-8 rounded-full mr-2">
-                            <span class="text-sm">John Doe</span>
-                        </div>
-                        <span class="text-primary font-bold">$49.99</span>
+                        <span class="text-sm"><?= htmlspecialchars($course['enseignant_nom']) ?></span>
+                        <span class="text-primary font-bold"><?= htmlspecialchars($course['category_nam']) ?></span>
                     </div>
                 </div>
             </div>
-            <!-- Repeat course cards -->
+            <?php endforeach; ?>
         </div>
 
         <!-- Pagination -->
         <div class="flex justify-center items-center space-x-2">
-            <a href="#" class="px-4 py-2 border rounded-lg hover:bg-primary hover:text-white transition-colors">
-                Previous
-            </a>
-            <a href="#" class="px-4 py-2 border rounded-lg bg-primary text-white">1</a>
-            <a href="#" class="px-4 py-2 border rounded-lg hover:bg-primary hover:text-white transition-colors">2</a>
-            <a href="#" class="px-4 py-2 border rounded-lg hover:bg-primary hover:text-white transition-colors">3</a>
-            <span class="px-4 py-2">...</span>
-            <a href="#" class="px-4 py-2 border rounded-lg hover:bg-primary hover:text-white transition-colors">8</a>
-            <a href="#" class="px-4 py-2 border rounded-lg hover:bg-primary hover:text-white transition-colors">
-                Next
-            </a>
+            <?php if ($currentPage > 1): ?>
+                <a href="?page=<?= $currentPage - 1 ?>" class="px-4 py-2 border rounded-lg hover:bg-primary hover:text-white transition-colors">
+                    Previous
+                </a>
+            <?php endif; ?>
+            
+            <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+                <?php if ($i == $currentPage): ?>
+                    <a href="?page=<?= $i ?>" class="px-4 py-2 border rounded-lg bg-primary text-white"><?= $i ?></a>
+                <?php else: ?>
+                    <a href="?page=<?= $i ?>" class="px-4 py-2 border rounded-lg hover:bg-primary hover:text-white transition-colors"><?= $i ?></a>
+                <?php endif; ?>
+            <?php endfor; ?>
+            
+            <?php if ($currentPage < $totalPages): ?>
+                <a href="?page=<?= $currentPage + 1 ?>" class="px-4 py-2 border rounded-lg hover:bg-primary hover:text-white transition-colors">
+                    Next
+                </a>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -168,7 +208,7 @@
         </div>
         <div class="border-t border-gray-800">
             <div class="container mx-auto px-6 py-6 text-center">
-                <p>&copy; 2025 Youdemy. All rights reserved.</p>
+                <p>&copy; <?= date('Y') ?> Youdemy. All rights reserved.</p>
             </div>
         </div>
     </footer>
@@ -176,3 +216,4 @@
     <script src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.8.2/dist/alpine.min.js" defer></script>
 </body>
 </html>
+
