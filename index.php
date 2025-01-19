@@ -36,6 +36,8 @@ switch ($action) {
     case 'login':
         $user->login();
         break;
+    case 'logout':
+        $user->logout();
         break;
     default:
         require_once 'views/404.php';

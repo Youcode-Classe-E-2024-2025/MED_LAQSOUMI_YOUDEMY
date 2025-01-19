@@ -32,11 +32,12 @@ class User {
         $stmt = $this->db->prepare($query);
         $stmt->execute([$email]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
-
+    
         if ($user && $this->checkPassword($password, $user['mot_de_passe'])) {
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['role'] = $user['role'];
-            return true;
+            $_SESSION['name'] = $user['nom'];
+            return $user; // Change this line to return the user object
         } else {
             return false;
         }
