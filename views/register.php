@@ -38,32 +38,26 @@
                 <h2 class="text-2xl font-bold text-white text-center">Create Your Account</h2>
                 <p class="text-blue-100 text-center mt-2">Join thousands of learners from around the world</p>
             </div>
-            <form class="py-8 px-6 space-y-6">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label class="block text-gray-700 text-sm font-bold mb-2">First Name</label>
-                        <input type="text" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:border-primary" required>
-                    </div>
-                    <div>
-                        <label class="block text-gray-700 text-sm font-bold mb-2">Last Name</label>
-                        <input type="text" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:border-primary" required>
-                    </div>
+            <form class="py-8 px-6 space-y-6" method="POST" action="index.php?action=register">
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">name</label>
+                    <input type="text" name="name" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:border-primary" required>
                 </div>
                 <div>
                     <label class="block text-gray-700 text-sm font-bold mb-2">Email Address</label>
-                    <input type="email" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:border-primary" required>
+                    <input type="email" name="email" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:border-primary" required>
                 </div>
                 <div>
                     <label class="block text-gray-700 text-sm font-bold mb-2">Password</label>
-                    <input type="password" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:border-primary" required>
+                    <input type="password" name="password" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:border-primary" required>
                 </div>
                 <div>
                     <label class="block text-gray-700 text-sm font-bold mb-2">Confirm Password</label>
-                    <input type="password" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:border-primary" required>
+                    <input type="password" name="confirm_password" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:border-primary" required>
                 </div>
                 <div>
                     <label class="block text-gray-700 text-sm font-bold mb-2">Account Type</label>
-                    <select class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:border-primary">
+                    <select name="role" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:border-primary">
                         <option value="student">Student</option>
                         <option value="teacher">Teacher</option>
                     </select>

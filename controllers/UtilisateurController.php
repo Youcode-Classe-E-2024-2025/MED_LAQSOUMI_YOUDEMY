@@ -66,4 +66,36 @@ class UtilisateurController {
         header("Location: index.php?action=home");
         exit();
     }
+
+    public function register() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $nom = trim($_POST['name']);
+            $email = filter_var(trim($_POST['email']), FILTER_SANITIZE_EMAIL);
+            $password = trim($_POST['password']);
+            $confirm_password = trim($_POST['confirm_password']);
+            $role = trim($_POST['role']);
+
+            if ($password !== $confirm_password) {
+                $error = "Passwords do not match.";
+            }
+
+            if (empty($nom) || empty($email) || empty($password) || empty($role) || empty($confirm_password)) {
+                $error = "All fields are required.";
+            } else {
+                $userId = $this->user->register($nom, $email, $password, $role);
+                if ($userId) {
+                    session_start();
+                    $_SESSION['name'] = $nom;
+                    $_SESSION['role'] = $role;
+                    $_SESSION['user_id'] = $userId;
+                    header('Location: index.php?action=home');
+                    exit;
+                } else {
+                    $error = "Registration failed. Please try again.";
+                }
+            }
+        }
+        require './views/register.php';
+    }
 }
+
