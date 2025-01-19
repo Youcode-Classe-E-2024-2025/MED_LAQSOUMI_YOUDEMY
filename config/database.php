@@ -1,7 +1,7 @@
 <?php
 function getDatabaseConnection() {
     $host = 'localhost';
-    $dbname = 'taskflow';
+    $dbname = 'youdemy';
     $username = 'root';
     $password = '';
 

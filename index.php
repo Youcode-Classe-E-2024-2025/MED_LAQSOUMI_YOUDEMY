@@ -9,7 +9,7 @@ require_once __DIR__ . '/controllers/UtilisateurController.php';
 
 
 $db = getDatabaseConnection();
-$utilisateurController = new UtilisateurController($db);
+$user = new UtilisateurController($db);
 // $courseController = new CourseController($db);
 // $enseignantController = new EnseignantController($db);
 // $etudiantController = new EtudiantController($db);
@@ -34,7 +34,8 @@ switch ($action) {
         require_once 'views/course.php';
         break;
     case 'login':
-        require_once 'controllers/UtilisateurController.php';
+        $user->login();
+        break;
         break;
     default:
         require_once 'views/404.php';

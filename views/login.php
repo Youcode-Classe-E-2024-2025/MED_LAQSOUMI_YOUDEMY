@@ -41,11 +41,11 @@
             <form class="py-8 px-6 space-y-6" method="POST" action="index.php?action=login">
                 <div>
                     <label class="block text-gray-700 text-sm font-bold mb-2">Email Address</label>
-                    <input type="email" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:border-primary" required>
+                    <input type="email" name="email" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:border-primary" required>
                 </div>
                 <div>
                     <label class="block text-gray-700 text-sm font-bold mb-2">Password</label>
-                    <input type="password" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:border-primary" required>
+                    <input type="password" name="password" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:border-primary" required>
                 </div>
                 <div class="flex items-center justify-between">
                     <div class="flex items-center">
