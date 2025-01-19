@@ -1,25 +1,16 @@
 <?php
-// config/database.php
+function getDatabaseConnection() {
+    $host = 'localhost';
+    $dbname = 'taskflow';
+    $username = 'root';
+    $password = '';
 
-class Database {
-    private $host = "localhost";
-    private $db_name = "youdemy";
-    private $username = "root";
-    private $password = "";
-
-    private $conn;
-
-    public function getConnection() {
-        $this->conn = null;
-
-        try {
-            $this->conn = new PDO("mysql:host=" . $this->host . ";dbname=" . $this->db_name, $this->username, $this->password.";charset=utf8mb4");
-            $this->conn->exec();
-            $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        } catch(PDOException $e) {
-            echo "Connection Error: " . $e->getMessage();
-        }
-
-        return $this->conn;
+    try {
+        $db = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $username, $password);
+        $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        return $db;
+    } catch(PDOException $e) {
+        die("Connection failed: " . $e->getMessage());
     }
 }
+

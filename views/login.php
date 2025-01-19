@@ -38,7 +38,7 @@
                 <h2 class="text-2xl font-bold text-white text-center">Welcome Back!</h2>
                 <p class="text-blue-100 text-center mt-2">Login to access your courses</p>
             </div>
-            <form class="py-8 px-6 space-y-6">
+            <form class="py-8 px-6 space-y-6" method="POST" action="index.php?action=login">
                 <div>
                     <label class="block text-gray-700 text-sm font-bold mb-2">Email Address</label>
                     <input type="email" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:border-primary" required>
@@ -58,7 +58,7 @@
                 </button>
                 <div class="text-center mt-4">
                     <span class="text-gray-600 text-sm">Don't have an account?</span>
-                    <a href="index.php?action=register" class="text-primary hover:text-secondary text-sm ml-1">Register now</a>
+                    <a href="index.php?action=registerPage" class="text-primary hover:text-secondary text-sm ml-1">Register now</a>
                 </div>
             </form>
         </div>

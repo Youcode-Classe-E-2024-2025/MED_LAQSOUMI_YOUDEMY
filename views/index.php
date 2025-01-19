@@ -32,8 +32,8 @@
         <div x-data="{ mobileMenu : false }" class="text-white text-lg fixed bottom-0 left-0 lg:relative p-6 lg:p-0 w-full lg:w-auto max-w-lg">
             <div x-bind:class="{ 'flex' : mobileMenu, 'hidden' : !mobileMenu }" class="lg:flex flex-col lg:flex-row items-center justify-center bg-primary lg:bg-transparent pt-6 pb-8 lg:p-0 -mb-6 lg:m-0 rounded-t-3xl shadow-2xl lg:shadow-none">
                 <a href="index.php?action=courses" class="my-2 lg:ml-6">Courses</a>
-                <a href="index.php?action=login" class="my-2 lg:ml-6">Login</a>
-                <a href="index.php?action=register" class="my-2 lg:ml-6">Register</a>
+                <a href="index.php?action=loginPage" class="my-2 lg:ml-6">Login</a>
+                <a href="index.php?action=registerPage" class="my-2 lg:ml-6">Register</a>
             </div>
             <!-- Mobile Menu Button -->
             <button x-on:click="mobileMenu = !mobileMenu" type="button" class="lg:hidden bg-primary text-white rounded-3xl w-full py-4 text-center uppercase text-sm shadow-2xl lg:shadow-none focus:outline-none">
@@ -125,7 +125,7 @@
         <div class="relative z-10 text-center text-white text-center mx-auto max-w-xl">
             <h2 class="text-3xl lg:text-5xl mb-4 font-bold uppercase italic">Become an Instructor</h2>
             <p class="text-xl mb-6">Share your knowledge and earn money teaching on Youdemy</p>
-            <a href="index.php?action=register" class="inline-block rounded-full border-2 border-white text-lg px-8 py-3 hover:bg-white hover:text-primary">Start Teaching</a>
+            <a href="index.php?action=registerPage" class="inline-block rounded-full border-2 border-white text-lg px-8 py-3 hover:bg-white hover:text-primary">Start Teaching</a>
         </div>
     </div>
 
@@ -143,8 +143,8 @@
                     <h3 class="text-xl font-bold mb-4">Learn</h3>
                     <ul class="space-y-2">
                         <li><a href="index.php?action=courses" class="hover:text-primary">All Courses</a></li>
-                        <li><a href="index.php?action=login" class="hover:text-primary">Login</a></li>
-                        <li><a href="index.php?action=register" class="hover:text-primary">Register</a></li>
+                        <li><a href="index.php?action=loginPage" class="hover:text-primary">Login</a></li>
+                        <li><a href="index.php?action=registerPage" class="hover:text-primary">Register</a></li>
                     </ul>
                 </div>
                 <div>
