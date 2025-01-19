@@ -1,5 +1,5 @@
 <?php
-session_start();
+// session_start();
 
 $role = isset($_SESSION['role']) ? $_SESSION['role'] : null;
 $userName = isset($_SESSION['name']) ? $_SESSION['name'] : '';
@@ -128,7 +128,7 @@ $userName = isset($_SESSION['name']) ? $_SESSION['name'] : '';
     <div class="container mx-auto px-6 py-12">
         <!-- Results Count and Sort -->
         <div class="flex justify-between items-center mb-8">
-            <p class="text-gray-600">Showing <?= ($currentPage - 1) * $perPage + 1 ?>-<?= min($currentPage * $perPage, $totalCourses) ?> of <?= $totalCourses ?> courses</p>
+            <p class="text-gray-600">Showing <?= ($page - 1) * $limit + 1 ?>-<?= min($page * $limit, $totalCourses) ?> of <?= $totalCourses ?> courses</p>
             <select class="px-4 py-2 border rounded-lg focus:outline-none focus:border-primary">
                 <option value="newest">Newest First</option>
                 <option value="popular">Most Popular</option>
@@ -141,14 +141,15 @@ $userName = isset($_SESSION['name']) ? $_SESSION['name'] : '';
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
             <?php foreach ($courses as $course) : ?>
             <div class="bg-white rounded-lg overflow-hidden shadow-lg">
-                <img src="<?= htmlspecialchars($course['image']) ?>" alt="Course thumbnail" class="w-full h-48 object-cover">
+                <img src="data:image/jpeg;base64,<?=htmlspecialchars($course['image'])?>" alt="Course thumbnail" class="w-full h-48 object-cover">
                 <div class="p-6">
-                    <h3 class="text-xl font-bold mb-2"><?= htmlspecialchars($course['titre']) ?></h3>
-                    <p class="text-gray-600 mb-4"><?= htmlspecialchars(substr($course['description'], 0, 100)) ?>...</p>
-                    <div class="flex items-center justify-between">
-                        <span class="text-sm"><?= htmlspecialchars($course['enseignant_nom']) ?></span>
-                        <span class="text-primary font-bold"><?= htmlspecialchars($course['category_nam']) ?></span>
+                    <h3 class="text-xl font-bold mb-2"><?= htmlspecialchars($course['titre'])?></h3>
+                    <p class="text-gray-600 mb-4"><?= htmlspecialchars(substr($course['description'], 0, 100))?>...</p>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm font-semibold">Teacher: <?= htmlspecialchars($course['teacher_name']) ?></span>
+                        <span class="text-primary font-bold"><?= htmlspecialchars($course['category_name']) ?></span>
                     </div>
+                    <div class="text-sm text-gray-500"><?= htmlspecialchars($course['contenu']) ?></div>
                 </div>
             </div>
             <?php endforeach; ?>
@@ -156,26 +157,26 @@ $userName = isset($_SESSION['name']) ? $_SESSION['name'] : '';
 
         <!-- Pagination -->
         <div class="flex justify-center items-center space-x-2">
-            <?php if ($currentPage > 1): ?>
-                <a href="?page=<?= $currentPage - 1 ?>" class="px-4 py-2 border rounded-lg hover:bg-primary hover:text-white transition-colors">
-                    Previous
-                </a>
-            <?php endif; ?>
-            
-            <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-                <?php if ($i == $currentPage): ?>
-                    <a href="?page=<?= $i ?>" class="px-4 py-2 border rounded-lg bg-primary text-white"><?= $i ?></a>
-                <?php else: ?>
-                    <a href="?page=<?= $i ?>" class="px-4 py-2 border rounded-lg hover:bg-primary hover:text-white transition-colors"><?= $i ?></a>
-                <?php endif; ?>
-            <?php endfor; ?>
-            
-            <?php if ($currentPage < $totalPages): ?>
-                <a href="?page=<?= $currentPage + 1 ?>" class="px-4 py-2 border rounded-lg hover:bg-primary hover:text-white transition-colors">
-                    Next
-                </a>
-            <?php endif; ?>
-        </div>
+    <?php if ($page > 1): ?>
+        <a href="?action=courses&page=<?= $page - 1 ?>" class="px-4 py-2 border rounded-lg hover:bg-primary hover:text-white transition-colors">
+            Previous
+        </a>
+    <?php endif; ?>
+    
+    <?php for ($i = max(1, $page - 2); $i <= min($totalPages, $page + 2); $i++): ?>
+        <?php if ($i == $page): ?>
+            <a href="?action=courses&page=<?= $i ?>" class="px-4 py-2 border rounded-lg bg-primary text-white"><?= $i ?></a>
+        <?php else: ?>
+            <a href="?action=courses&page=<?= $i ?>" class="px-4 py-2 border rounded-lg hover:bg-primary hover:text-white transition-colors"><?= $i ?></a>
+        <?php endif; ?>
+    <?php endfor; ?>
+    
+    <?php if ($page < $totalPages): ?>
+        <a href="?action=courses&page=<?= $page + 1 ?>" class="px-4 py-2 border rounded-lg hover:bg-primary hover:text-white transition-colors">
+            Next
+        </a>
+    <?php endif; ?>
+</div>
     </div>
 
     <!-- Footer -->
