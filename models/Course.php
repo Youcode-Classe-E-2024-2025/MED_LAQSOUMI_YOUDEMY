@@ -136,5 +136,13 @@ class Course {
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    public function inscrireCours($user_id, $cours_id) {
+        $query = "INSERT INTO inscriptions (etudiant_id, cours_id) VALUES (:user_id, :cours_id)";
+        $stmt = $this->db->prepare($query);
+        $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
+        $stmt->bindParam(':cours_id', $cours_id, PDO::PARAM_INT);
+        return $stmt->execute();
+    }
     
 }
