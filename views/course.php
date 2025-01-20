@@ -1,13 +1,8 @@
 <?php
-session_start();
+// session_start();
 $role = isset($_SESSION['role']) ? $_SESSION['role'] : null;
 $userName = isset($_SESSION['name']) ? $_SESSION['name'] : '';
-
-
-$results = array_map(function ($course) {
-    $course['image'] = $course['image'];
-    return $course;
-}, $results);
+$data = isset($courses) ? $courses : (isset($results) ? $results : []);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -143,17 +138,17 @@ $results = array_map(function ($course) {
 
         <!-- Course Cards Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-            <?php foreach ($courses as $course) : ?>
+            <?php foreach ($data as $item) : ?>
             <div class="bg-white rounded-lg overflow-hidden shadow-lg">
-                <img src="<?=htmlspecialchars($course['image'])?>" alt="Course thumbnail" class="w-full h-48 object-cover">
+                <img src="<?= htmlspecialchars($item['image']) ?>" alt="Thumbnail" class="w-full h-48 object-cover">
                 <div class="p-6">
-                    <h3 class="text-xl font-bold mb-2"><?= htmlspecialchars($course['titre'])?></h3>
-                    <p class="text-gray-600 mb-4"><?= htmlspecialchars(substr($course['description'], 0, 100))?>...</p>
+                    <h3 class="text-xl font-bold mb-2"><?= htmlspecialchars($item['titre']) ?></h3>
+                    <p class="text-gray-600 mb-4"><?= htmlspecialchars(substr($item['description'], 0, 100)) ?>...</p>
                     <div class="flex items-center justify-between mb-2">
-                        <span class="text-sm font-semibold">Teacher: <?= htmlspecialchars($course['teacher_name']) ?></span>
-                        <span class="text-primary font-bold"><?= htmlspecialchars($course['category_name']) ?></span>
+                        <span class="text-sm font-semibold">Teacher: <?= htmlspecialchars($item['teacher_name']) ?></span>
+                        <span class="text-primary font-bold"><?= htmlspecialchars($item['category_name']) ?></span>
                     </div>
-                    <div class="text-sm text-gray-500"><?= htmlspecialchars($course['contenu']) ?></div>
+                    <div class="text-sm text-gray-500"><?= htmlspecialchars($item['contenu']) ?></div>
                 </div>
             </div>
             <?php endforeach; ?>
