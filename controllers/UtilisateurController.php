@@ -31,32 +31,40 @@ class UtilisateurController
                 if ($user) {
                     session_start();
                     $userRole = $user['role'];
-                    if ($userRole === 'etudiant') {
-                        $_SESSION['name'] = $user['nom'];
-                        $_SESSION['role'] = $user['role'];
-                        $_SESSION['user_id'] = $user['id'];
-                        header('Location: index.php?action=home');
-                        exit;
-                    } elseif ($userRole === 'enseignant') {
-                        $_SESSION['name'] = $user['nom'];
-                        $_SESSION['role'] = $user['role'];
-                        $_SESSION['user_id'] = $user['id'];
-                        header('Location: index.php?action=home');
-                        exit;
-                    } else {
-                        $_SESSION['name'] = $user['nom'];
-                        $_SESSION['role'] = $user['role'];
-                        $_SESSION['user_id'] = $user['id'];
-                        header('Location: index.php?action=home');
-                        exit;
+                    switch ($userRole) {
+                        case 'etudiant':
+                            $_SESSION['name'] = $user['nom'];
+                            $_SESSION['role'] = $user['role'];
+                            $_SESSION['user_id'] = $user['id'];
+                            header('Location: index.php?action=home');
+                            exit;
+                            break;
+                        case 'enseignant':
+                            $_SESSION['name'] = $user['nom'];
+                            $_SESSION['role'] = $user['role'];
+                            $_SESSION['user_id'] = $user['id'];
+                            header('Location: index.php?action=home');
+                            exit;
+                            break;
+                        case 'administrateur':
+                            $_SESSION['name'] = $user['nom'];
+                            $_SESSION['role'] = $user['role'];
+                            $_SESSION['user_id'] = $user['id'];
+                            header('Location: index.php?action=home');
+                            exit;
+                            break;
+                        default:
+                            $error = "Invalid email or password.";
+                            break;
                     }
                 } else {
                     $error = "Invalid email or password.";
                 }
             }
         }
-        require './views/login.php';
+        require_once 'views/login.php';
     }
+
 
     public function logout()
     {
@@ -97,35 +105,49 @@ class UtilisateurController
                 $userId = $this->user->register($nom, $email, $password, $role);
                 if ($userId) {
                     $user = $this->user->login($email, $password);
-                    
+
                     if ($user) {
                         session_start();
                         $userRole = $user['role'];
-                        if ($userRole === 'etudiant') {
-                            $_SESSION['name'] = $user['nom'];
-                            $_SESSION['role'] = $user['role'];
-                            $_SESSION['user_id'] = $user['id'];
-                            header('Location: index.php?action=home');
-                            exit;
-                        } elseif ($userRole === 'enseignant') {
-                            $_SESSION['name'] = $user['nom'];
-                            $_SESSION['role'] = $user['role'];
-                            $_SESSION['user_id'] = $user['id'];
-                            header('Location: index.php?action=home');
-                            exit;
-                        } else {
-                            $_SESSION['name'] = $user['nom'];
-                            $_SESSION['role'] = $user['role'];
-                            $_SESSION['user_id'] = $user['id'];
-                            header('Location: index.php?action=home');
-                            exit;
+                        switch ($userRole) {
+                            case 'etudiant':
+                                $_SESSION['name'] = $user['nom'];
+                                $_SESSION['role'] = $user['role'];
+                                $_SESSION['user_id'] = $user['id'];
+                                header('Location: index.php?action=home');
+                                exit;
+                                break;
+                            case 'enseignant':
+                                $_SESSION['name'] = $user['nom'];
+                                $_SESSION['role'] = $user['role'];
+                                $_SESSION['user_id'] = $user['id'];
+                                header('Location: index.php?action=home');
+                                exit;
+                                break;
+                            case 'administrateur':
+                                $_SESSION['name'] = $user['nom'];
+                                $_SESSION['role'] = $user['role'];
+                                $_SESSION['user_id'] = $user['id'];
+                                header('Location: index.php?action=home');
+                                exit;
+                                break;
+                            default:
+                                $error = "Invalid email or password.";
+                                break;
                         }
+                    } else {
+                        $error = "Invalid email or password.";
                     }
-                } else {
-                    $error = "Registration failed. Please try again.";
                 }
             }
         }
         require './views/register.php';
+    }
+
+    public function getRole()
+    {
+        session_start();
+        $role = isset($_SESSION['role']) ? $_SESSION['role'] : null;
+        return $role;
     }
 }

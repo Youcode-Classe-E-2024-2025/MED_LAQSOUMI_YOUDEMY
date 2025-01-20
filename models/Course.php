@@ -4,10 +4,22 @@ require_once __DIR__ . '/../config/database.php';
 
 class Course {
     private $db;
+    private $id;
+    private $titre;
+    private $description;
+    private $contenu;
+    private $enseignant_id;
+    private $categorie_id;
 
     public function __construct($db) {
         $db = DatabaseConnection::getInstance();
         $this->db = $db->getConnection();
+        $this->id = null;
+        $this->titre = '';
+        $this->description = '';
+        $this->contenu = '';
+        $this->enseignant_id = null;
+        $this->categorie_id = null;
     }
 
     public function getAll($page = 1, $limit = 12) {

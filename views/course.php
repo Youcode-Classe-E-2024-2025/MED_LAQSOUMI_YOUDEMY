@@ -36,12 +36,12 @@ $data = isset($courses) ? $courses : (isset($results) ? $results : []);
         <div x-data="{ mobileMenu: false }" class="text-white text-lg fixed bottom-0 left-0 lg:relative p-6 lg:p-0 w-full lg:w-auto max-w-lg">
             <div x-bind:class="{ 'flex': mobileMenu, 'hidden': !mobileMenu }" class="lg:flex flex-col lg:flex-row items-center justify-center bg-primary lg:bg-transparent pt-6 pb-8 lg:m-auto lg:gap-5 lg:p-0 -mb-6 lg:m-0 rounded-t-3xl shadow-2xl lg:shadow-none">
                 <?php if ($role === 'etudiant'): ?>
-                    <span class="my-2 lg:ml-6">Welcome, <?= htmlspecialchars($userName) ?></span>
+                    <span class="my-2 lg:ml-6">Welcome <?= htmlspecialchars($userName) ?></span>
                     <a href="index.php?action=myCourses" class="my-2 lg:ml-6">My Courses</a>
                     <a href="index.php?action=courses" class="my-2 lg:ml-6">Courses</a>
                     <a href="index.php?action=logout" class="my-2 lg:ml-6">Logout</a>
                 <?php elseif ($role === 'teacher'): ?>
-                    <span class="my-2 lg:ml-6">Welcome, <?= htmlspecialchars($userName) ?></span>
+                    <span class="my-2 lg:ml-6">Welcome <?= htmlspecialchars($userName) ?></span>
                     <a href="index.php?action=teacherDashboard" class="my-2 lg:ml-6">Dashboard</a>
                     <a href="index.php?action=createCourse" class="my-2 lg:ml-6">Create Course</a>
                     <a href="index.php?action=logout" class="my-2 lg:ml-6">Logout</a>
