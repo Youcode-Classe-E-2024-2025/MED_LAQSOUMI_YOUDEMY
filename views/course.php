@@ -1,11 +1,13 @@
 <?php
-// session_start();
-
+session_start();
 $role = isset($_SESSION['role']) ? $_SESSION['role'] : null;
 $userName = isset($_SESSION['name']) ? $_SESSION['name'] : '';
 
 
-
+$results = array_map(function ($course) {
+    $course['image'] = $course['image'];
+    return $course;
+}, $results);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -83,14 +85,16 @@ $userName = isset($_SESSION['name']) ? $_SESSION['name'] : '';
             <div class="max-w-4xl mx-auto">
                 <!-- Search Bar -->
                 <div class="bg-white rounded-lg p-4 shadow-lg mb-6">
+                <form action="index.php?action=courses" method="GET">
                     <div class="flex flex-col md:flex-row gap-4">
                         <div class="flex-1">
-                            <input type="text" placeholder="Search courses..." class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-primary">
+                            <input type="text" name="keyword" placeholder="Search courses..." class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-primary">
                         </div>
-                        <button class="bg-primary text-white px-6 py-2 rounded-lg hover:bg-secondary transition-colors">
+                        <button type="submit" name="action" value="search" class="bg-primary text-white px-6 py-2 rounded-lg hover:bg-secondary transition-colors">
                             Search
                         </button>
                     </div>
+                </form>
                     
                     <!-- Filters -->
                     <div class="mt-4 flex flex-wrap gap-4">
@@ -141,7 +145,7 @@ $userName = isset($_SESSION['name']) ? $_SESSION['name'] : '';
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
             <?php foreach ($courses as $course) : ?>
             <div class="bg-white rounded-lg overflow-hidden shadow-lg">
-                <img src="data:image/jpeg;base64,<?=htmlspecialchars($course['image'])?>" alt="Course thumbnail" class="w-full h-48 object-cover">
+                <img src="<?=htmlspecialchars($course['image'])?>" alt="Course thumbnail" class="w-full h-48 object-cover">
                 <div class="p-6">
                     <h3 class="text-xl font-bold mb-2"><?= htmlspecialchars($course['titre'])?></h3>
                     <p class="text-gray-600 mb-4"><?= htmlspecialchars(substr($course['description'], 0, 100))?>...</p>

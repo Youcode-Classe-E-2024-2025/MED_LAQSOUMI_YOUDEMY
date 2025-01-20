@@ -28,5 +28,20 @@ class Course {
         $stmt->execute();
         return $stmt->fetchColumn();
     }
+
+
+    public function getCoursesByKeyword($keyword) {
+        $query = "SELECT * FROM cours WHERE 
+                  titre LIKE :keyword OR 
+                  description LIKE :keyword OR
+                  contenu LIKE :keyword OR
+                  categorie_id LIKE :keyword";
+        
+        $stmt = $this->db->prepare($query);
+        $stmt->bindValue(':keyword', '%' . $keyword . '%', PDO::PARAM_STR);
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }
 

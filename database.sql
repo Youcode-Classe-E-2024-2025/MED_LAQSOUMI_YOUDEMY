@@ -105,7 +105,7 @@ INSERT INTO utilisateurs (nom, email, mot_de_passe, role) VALUES
 
 -- Insérer les données avec des liens d’images fictifs
 INSERT INTO cours (titre, description, contenu, image, categorie_id, enseignant_id) VALUES
-('Cours de HTML', 'Introduction à HTML', 'Contenu sur HTML', 'https://placehold.co/300', 1, 2),
+('Cours de HTML', 'q', 'Contenu sur HTML', 'https://placehold.co/300', 1, 2),
 ('CSS pour Débutants', 'Les bases de CSS', 'Contenu CSS', 'https://placehold.co/300', 1, 5),
 ('JavaScript Avancé', 'JS pour experts', 'Contenu JS', 'https://placehold.co/300', 1, 15),
 ('Apprendre Photoshop', 'Techniques Photoshop', 'Contenu Photoshop', 'https://placehold.co/300', 2, 8),

@@ -25,26 +25,29 @@ class UtilisateurController {
                 $user = $this->user->login($email, $password);
                 if ($user) {
                     session_start();
-                    $_SESSION['name'] = $user['nom'];
-                    $_SESSION['role'] = $user['role'];
-                    $_SESSION['user_id'] = $user['id'];
-                    header('Location: index.php?action=home');
-                    exit;
+                    $userRole = $user['role'];
+                    if ($userRole === 'etudiant') {
+                        $_SESSION['name'] = $user['nom'];
+                        $_SESSION['role'] = $user['role'];
+                        $_SESSION['user_id'] = $user['id'];
+                        header('Location: index.php?action=home');
+                        exit;
+                    } elseif ($userRole === 'enseignant') {
+                        $_SESSION['name'] = $user['nom'];
+                        $_SESSION['role'] = $user['role'];
+                        $_SESSION['user_id'] = $user['id'];
+                        header('Location: index.php?action=home');
+                        exit;
+                    } else {
+                        $_SESSION['name'] = $user['nom'];
+                        $_SESSION['role'] = $user['role'];
+                        $_SESSION['user_id'] = $user['id'];
+                        header('Location: index.php?action=home');
+                        exit;
+                    }
+                    
                 
-                    // switch ($user['role']) {
-                    //     case 'etudiant':
-                    //         // header('Location: index.php?action=home');
-                    //         break;
-                    //     case 'teacher':
-                    //         header('Location: index.php?action=teacherDashboard');
-                    //         break;
-                    //     case 'admin':
-                    //         header('Location: index.php?action=adminDashboard');
-                    //         break;
-                    //     default:
-                    //         header('Location: index.php?action=home');
-                    // }
-                    // exit;
+                    
                 } else {
                     $error = "Invalid email or password.";
                 }

@@ -30,8 +30,23 @@ switch ($action) {
     case 'registerPage':
         require_once 'views/register.php';
         break;
+    case 'profile':
+        require_once 'views/profile.php';
+        break;
+    case 'myCourses':
+        require_once 'views/myCourses.php';
+        break;
+    case 'teacherDashboard':
+        require_once 'views/teacher_Dashboard.php';
+        break;
+    case 'adminDashboard':
+        require_once 'views/admin_Dashboard.php';
+        break;
     case 'courses':
         $courseController->getAll();
+        break;
+    case 'search':
+        $courseController->handleSearch();
         break;
     case 'login':
         $user->login();
