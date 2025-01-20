@@ -84,15 +84,11 @@ class CourseController
             return $course;
         }, $courses);
         require_once __DIR__ . '/../views/myCourses.php';
-        // session_start();
-        // $role = isset($_SESSION['role']) ? $_SESSION['role'] : null;
-        // $userName = isset($_SESSION['name']) ? $_SESSION['name'] : '';
-        // $userId = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null;
+    }
 
-        // $courses = array_map(function ($course) {
-        //     $course['image'] = $course['image'];
-        //     return $course;
-        // }, $courses);
-        // require_once __DIR__ . '/../views/myCourses.php';
+    public function inscrireCours($user_id, $cours_id) {
+        $this->course->inscrireCours($user_id, $cours_id);
+        header("Location: index.php?action=myCourses");
+        exit;
     }
 }

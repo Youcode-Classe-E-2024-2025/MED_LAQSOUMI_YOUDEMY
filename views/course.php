@@ -138,12 +138,17 @@ $data = isset($courses) ? $courses : (isset($results) ? $results : []);
         <!-- Course Cards Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
             <?php foreach ($data as $item) : ?>
-            <div class="bg-white rounded-lg overflow-hidden shadow-lg">
+            <div class="bg-white rounded-lg overflow-hidden shadow-lg cursor-pointer" onclick="openModal(<?= htmlspecialchars(json_encode($item)) ?>)">
                 <img src="<?= htmlspecialchars($item['image']) ?>" alt="Thumbnail" class="w-full h-48 object-cover">
                 <div class="p-6">
                     <h3 class="text-xl font-bold mb-2"><?= htmlspecialchars($item['titre']) ?></h3>
                     <p class="text-gray-600 mb-4"><?= htmlspecialchars(substr($item['description'], 0, 100)) ?>...</p>
-                    <?php if ($role === 'etudiant' || $role === 'teacher'): ?>
+                    <?php if ($role === 'etudiant'): ?>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-semibold">Teacher: <?= htmlspecialchars($item['teacher_name']) ?></span>
+                            <span class="text-primary font-bold"><?= htmlspecialchars($item['category_name']) ?></span>
+                        </div>
+                    <?php elseif ($role === 'teacher'): ?>
                         <div class="flex items-center justify-between mb-2">
                             <span class="text-sm font-semibold">Teacher: <?= htmlspecialchars($item['teacher_name']) ?></span>
                             <span class="text-primary font-bold"><?= htmlspecialchars($item['category_name']) ?></span>
@@ -220,6 +225,74 @@ $data = isset($courses) ? $courses : (isset($results) ? $results : []);
     </footer>
 
     <script src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.8.2/dist/alpine.min.js" defer></script>
+    <!-- Modal -->
+<div id="courseModal" class="fixed z-50 inset-0 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="">
+                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title"></h3>
+                        <div class="mt-2">
+                            <img src="" alt="Course Thumbnail" class="w-full h-48 object-cover" id="modal-image">
+                        </div>
+                        <div class="mt-2">
+                            <p class="text-sm text-gray-500" id="modal-description"></p>
+                        </div>
+                        <div class="mt-4">
+                            <p class="text-sm text-gray-600" id="modal-teacher"></p>
+                            <p class="text-sm text-gray-600" id="modal-category"></p>
+                            <p class="text-sm text-gray-600" id="modal-content"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button type="button" id="enrollButton" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary text-base font-medium text-white hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:ml-3 sm:w-auto sm:text-sm">
+                    Enroll
+                </button>
+                <button type="button" onclick="closeModal()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function openModal(course) {
+    document.getElementById('modal-image').src = course.image;
+    document.getElementById('modal-title').textContent = course.titre;
+    document.getElementById('modal-description').textContent = course.description;
+    document.getElementById('modal-teacher').textContent = 'Teacher: ' + course.teacher_name;
+    document.getElementById('modal-category').textContent = 'Category: ' + course.category_name;
+    document.getElementById('modal-content').textContent = 'Content: ' + course.contenu;
+    
+    document.getElementById('enrollButton').onclick = function() {
+        enrollInCourse(course.id);
+    };
+    
+    document.getElementById('courseModal').classList.remove('hidden');
+}
+
+function closeModal() {
+    document.getElementById('courseModal').classList.add('hidden');
+}
+
+function enrollInCourse(courseId) {
+    console.log('Enrolling in course with ID:', courseId);
+    alert('You have been enrolled in the course!');
+    closeModal();
+}
+window.onclick = function(event) {
+    var modal = document.getElementById('courseModal');
+    if (event.target == modal) {
+        closeModal();
+    }
+}
+</script>
 </body>
 </html>
 
