@@ -6,8 +6,8 @@ class Course {
     private $db;
 
     public function __construct($db) {
-        $db = new DatabaseConnection();
-        $this->db = $db->connect();
+        $db = DatabaseConnection::getInstance();
+        $this->db = $db->getConnection();
     }
 
     public function getAll($page = 1, $limit = 10) {

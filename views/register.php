@@ -58,8 +58,8 @@
                 <div>
                     <label class="block text-gray-700 text-sm font-bold mb-2">Account Type</label>
                     <select name="role" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:border-primary">
-                        <option value="student">Student</option>
-                        <option value="teacher">Teacher</option>
+                        <option value="etudiant">Student</option>
+                        <option value="enseignant">Teacher</option>
                     </select>
                 </div>
                 <div class="flex items-center">

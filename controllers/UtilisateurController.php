@@ -3,26 +3,31 @@ require_once __DIR__ . '/../models/Utilisateur.php';
 require_once __DIR__ . '/../models/Course.php';
 require_once __DIR__ . '/../models/Enseignant.php';
 require_once __DIR__ . '/../models/Etudiant.php';
-
-class UtilisateurController {
+// 
+class UtilisateurController
+{
     private $db;
     private $user;
+    private $email;
+    private $password;
 
-    public function __construct($db) {
+    public function __construct($db)
+    {
         $this->db = $db;
         $this->user = new User($this->db);
     }
 
 
-    public function login() {
+    public function login()
+    {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $email = filter_var(trim($_POST['email']), FILTER_SANITIZE_EMAIL);
-            $password = trim($_POST['password']);
+            $this->email = filter_var(trim($_POST['email']), FILTER_SANITIZE_EMAIL);
+            $this->password = trim($_POST['password']);
 
-            if (empty($email) || empty($password)) {
+            if (empty($this->email) || empty($this->password)) {
                 $error = "Both email and password are required.";
             } else {
-                $user = $this->user->login($email, $password);
+                $user = $this->user->login($this->email, $this->password);
                 if ($user) {
                     session_start();
                     $userRole = $user['role'];
@@ -45,9 +50,6 @@ class UtilisateurController {
                         header('Location: index.php?action=home');
                         exit;
                     }
-                    
-                
-                    
                 } else {
                     $error = "Invalid email or password.";
                 }
@@ -56,13 +58,19 @@ class UtilisateurController {
         require './views/login.php';
     }
 
-    public function logout() {
+    public function logout()
+    {
         $_SESSION = array();
         if (ini_get("session.use_cookies")) {
             $params = session_get_cookie_params();
-            setcookie(session_name(), '', time() - 42000,
-                $params["path"], $params["domain"],
-                $params["secure"], $params["httponly"]
+            setcookie(
+                session_name(),
+                '',
+                time() - 42000,
+                $params["path"],
+                $params["domain"],
+                $params["secure"],
+                $params["httponly"]
             );
         }
         session_destroy();
@@ -70,7 +78,8 @@ class UtilisateurController {
         exit();
     }
 
-    public function register() {
+    public function register()
+    {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $nom = trim($_POST['name']);
             $email = filter_var(trim($_POST['email']), FILTER_SANITIZE_EMAIL);
@@ -87,12 +96,31 @@ class UtilisateurController {
             } else {
                 $userId = $this->user->register($nom, $email, $password, $role);
                 if ($userId) {
-                    session_start();
-                    $_SESSION['name'] = $nom;
-                    $_SESSION['role'] = $role;
-                    $_SESSION['user_id'] = $userId;
-                    header('Location: index.php?action=home');
-                    exit;
+                    $user = $this->user->login($email, $password);
+                    
+                    if ($user) {
+                        session_start();
+                        $userRole = $user['role'];
+                        if ($userRole === 'etudiant') {
+                            $_SESSION['name'] = $user['nom'];
+                            $_SESSION['role'] = $user['role'];
+                            $_SESSION['user_id'] = $user['id'];
+                            header('Location: index.php?action=home');
+                            exit;
+                        } elseif ($userRole === 'enseignant') {
+                            $_SESSION['name'] = $user['nom'];
+                            $_SESSION['role'] = $user['role'];
+                            $_SESSION['user_id'] = $user['id'];
+                            header('Location: index.php?action=home');
+                            exit;
+                        } else {
+                            $_SESSION['name'] = $user['nom'];
+                            $_SESSION['role'] = $user['role'];
+                            $_SESSION['user_id'] = $user['id'];
+                            header('Location: index.php?action=home');
+                            exit;
+                        }
+                    }
                 } else {
                     $error = "Registration failed. Please try again.";
                 }
@@ -101,4 +129,3 @@ class UtilisateurController {
         require './views/register.php';
     }
 }
-

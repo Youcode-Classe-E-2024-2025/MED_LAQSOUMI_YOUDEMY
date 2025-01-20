@@ -9,8 +9,7 @@ class User {
     private $password;
 
     public function __construct($db, $id = null, $role = null, $name = null, $email = null, $password = null) {
-        $db = new DatabaseConnection();
-        $this->db = $db->connect();
+        $this->db = $db->getConnection();
         $this->id = $id;
         $this->role = $role;
         $this->name = $name;
@@ -42,15 +41,17 @@ class User {
 
     public function login($email, $password) {
         try {
+            $this->email = $email;
+            $this->password = $password;
             $query = "SELECT * FROM utilisateurs WHERE email = ?";
             $stmt = $this->db->prepare($query);
             $stmt->execute([$email]);
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
         
             if ($user && $this->checkPassword($password, $user['mot_de_passe'])) {
-                $_SESSION['user_id'] = $user['id'];
-                $_SESSION['role'] = $user['role'];
-                $_SESSION['name'] = $user['nom'];
+                $_SESSION['user_id'] = $this->id;
+                $_SESSION['role'] = $this->role;
+                $_SESSION['name'] = $this->name;
                 return $user; 
             } else {
                 return false;
@@ -63,9 +64,24 @@ class User {
 
     public function getUserById($id) {
         try {
+            $this->id = $id;
             $query = "SELECT * FROM utilisateurs WHERE id = ?";
             $stmt = $this->db->prepare($query);
             $stmt->execute([$id]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log('Get user by ID error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+
+    public function getUserByRole($role) {
+        try {
+            $this->role = $role;
+            $query = "SELECT * FROM utilisateurs WHERE role = ?";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([$role]);
             return $stmt->fetch(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             error_log('Get user by ID error: ' . $e->getMessage());
