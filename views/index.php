@@ -5,6 +5,7 @@ $userName = isset($_SESSION['name']) ? $_SESSION['name'] : '';
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -13,20 +14,21 @@ $userName = isset($_SESSION['name']) ? $_SESSION['name'] : '';
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
-          theme: {
-            extend: {
-              colors: {
-                primary: '#2563eb',
-                secondary: '#1e40af'
-              },
-              fontFamily: {
-                'sans' : ['Roboto Condensed', 'sans-serif']
-              }
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2563eb',
+                        secondary: '#1e40af'
+                    },
+                    fontFamily: {
+                        'sans': ['Roboto Condensed', 'sans-serif']
+                    }
+                }
             }
-          }
         }
     </script>
 </head>
+
 <body class="font-sans font-normal antialiased bg-white text-gray-900">
     <!-- Header Section -->
     <div class="h-24 w-full absolute top-0 left-0 bg-primary"></div>
@@ -35,20 +37,17 @@ $userName = isset($_SESSION['name']) ? $_SESSION['name'] : '';
         <div x-data="{ mobileMenu : false }" class="text-white text-lg fixed bottom-0 left-0 lg:relative p-6 lg:p-0 w-full lg:w-auto max-w-lg">
             <div x-bind:class="{ 'flex' : mobileMenu, 'hidden' : !mobileMenu }" class="lg:flex flex-col lg:flex-row items-center justify-center bg-primary lg:bg-transparent pt-6 pb-8 lg:p-0 -mb-6 lg:m-0 rounded-t-3xl shadow-2xl lg:shadow-none">
                 <?php if ($role === 'etudiant'): ?>
-                    <span class="my-2 lg:ml-6">Welcome <?php echo htmlspecialchars($userName); ?> <strong><?php echo htmlspecialchars($role); ?></strong></span>
+                    <span class="my-2 lg:ml-6">Welcome <strong><?php echo htmlspecialchars($userName); ?></strong><?php echo htmlspecialchars($role); ?></span>
                     <a href="index.php?action=myCourses" class="my-2 lg:ml-6">My Courses</a>
-                    <a href="index.php?action=profile" class="my-2 lg:ml-6">Profile</a>
                     <a href="index.php?action=logout" class="my-2 lg:ml-6">Logout</a>
                 <?php elseif ($role === 'enseignant'): ?>
-                    <span class="my-2 lg:ml-6">Welcome <?php echo htmlspecialchars($userName); ?> <strong><?php echo htmlspecialchars($role); ?></strong></span>
+                    <span class="my-2 lg:ml-6">Welcome <strong><?php echo htmlspecialchars($userName); ?></strong><?php echo htmlspecialchars($role); ?></span>
                     <a href="index.php?action=teacherDashboard" class="my-2 lg:ml-6">Dashboard</a>
                     <a href="index.php?action=createCourse" class="my-2 lg:ml-6">Create Course</a>
-                    <a href="index.php?action=profile" class="my-2 lg:ml-6">Profile</a>
                     <a href="index.php?action=logout" class="my-2 lg:ml-6">Logout</a>
                 <?php elseif ($role === 'administrateur'): ?>
-                    <span class="my-2 lg:ml-6">Welcome <?php echo htmlspecialchars($userName); ?> <strong><?php echo htmlspecialchars($role); ?></strong></span>
+                    <span class="my-2 lg:ml-6">Welcome <strong><?php echo htmlspecialchars($userName); ?></strong><?php echo htmlspecialchars($role); ?></span>
                     <a href="index.php?action=adminDashboard" class="my-2 lg:ml-6">Dashboard</a>
-                    <a href="index.php?action=profile" class="my-2 lg:ml-6">Profile</a>
                     <a href="index.php?action=logout" class="my-2 lg:ml-6">Logout</a>
                 <?php else: ?>
                     <a href="index.php?action=courses" class="my-2 lg:ml-6">Courses</a>
@@ -63,7 +62,7 @@ $userName = isset($_SESSION['name']) ? $_SESSION['name'] : '';
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16"></path>
                         </svg>
-                         Menu
+                        Menu
                     </div>
                 </template>
                 <template x-if="mobileMenu">
@@ -71,7 +70,7 @@ $userName = isset($_SESSION['name']) ? $_SESSION['name'] : '';
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
-                         Close
+                        Close
                     </div>
                 </template>
             </button>
@@ -159,5 +158,5 @@ $userName = isset($_SESSION['name']) ? $_SESSION['name'] : '';
 
     <script src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.8.2/dist/alpine.min.js" defer></script>
 </body>
-</html>
 
+</html>
