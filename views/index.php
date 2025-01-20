@@ -2,6 +2,30 @@
 session_start();
 $role = isset($_SESSION['role']) ? $_SESSION['role'] : null;
 $userName = isset($_SESSION['name']) ? $_SESSION['name'] : '';
+
+if (isset($_GET['action'])) {
+    switch ($_GET['action']) {
+        case 'submitCourseRequest':
+            if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SESSION['role']) && $_SESSION['role'] === 'enseignant') {
+                $courseTitle = $_POST['course-title'] ?? '';
+                $courseProposal = $_POST['course-proposal'] ?? '';
+                $teacherExpertise = $_POST['teacher-expertise'] ?? '';
+                $courseCategory = $_POST['course-category'] ?? '';
+                
+                // Here you would typically save this data to your database
+                // For now, we'll just print a success message
+                echo "Course proposal submitted successfully. An administrator will review your request.";
+                
+                // Redirect back to the home page or a confirmation page
+                header("Location: index.php?action=home&message=proposalSubmitted");
+                exit;
+            } else {
+                // Handle invalid requests
+                echo "Invalid request or insufficient permissions.";
+            }
+            break;
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -175,21 +199,48 @@ $userName = isset($_SESSION['name']) ? $_SESSION['name'] : '';
             <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
             <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                    <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
-                        Create a New Course
-                    </h3>
-                    <div class="mt-2">
-                        <p class="text-sm text-gray-500">
-                            To create a new course, please submit a request to the administrator. They will review your request and get back to you shortly.
-                        </p>
+                <form action="index.php?action=submitCourseRequest" method="POST">
+                    <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                            Course Teaching Proposal
+                        </h3>
+                        <div class="mt-2 space-y-4">
+                            <p class="text-sm text-gray-500">
+                                Please provide details about the course you'd like to teach. Describe your expertise and what students will learn.
+                            </p>
+                            <div>
+                                <label for="course-title" class="block text-sm font-medium text-gray-700">Course Title</label>
+                                <input type="text" name="course-title" id="course-title" required class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                            </div>
+                            <div>
+                                <label for="course-proposal" class="block text-sm font-medium text-gray-700">Teaching Proposal</label>
+                                <textarea name="course-proposal" id="course-proposal" rows="5" required class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md" placeholder="I will teach... Students will learn..."></textarea>
+                            </div>
+                            <div>
+                                <label for="teacher-expertise" class="block text-sm font-medium text-gray-700">Your Expertise</label>
+                                <textarea name="teacher-expertise" id="teacher-expertise" rows="3" required class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md" placeholder="Describe your qualifications and experience in this subject..."></textarea>
+                            </div>
+                            <div>
+                                <label for="course-category" class="block text-sm font-medium text-gray-700">Course Category</label>
+                                <select name="course-category" id="course-category" required class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                                    <option value="">Select a category</option>
+                                    <option value="development">Development</option>
+                                    <option value="business">Business</option>
+                                    <option value="design">Design</option>
+                                    <option value="marketing">Marketing</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
-                </div>
-                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                    <button type="button" onclick="closeTeachingModal()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
-                        Close
-                    </button>
-                </div>
+                    <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                        <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary text-base font-medium text-white hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:ml-3 sm:w-auto sm:text-sm">
+                            Submit Proposal
+                        </button>
+                        <button type="button" onclick="closeTeachingModal()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

@@ -10,6 +10,8 @@ class Course {
     private $contenu;
     private $enseignant_id;
     private $categorie_id;
+    private $image;
+    private $tagid = null;
 
     public function __construct($db) {
         $db = DatabaseConnection::getInstance();
@@ -20,7 +22,30 @@ class Course {
         $this->contenu = '';
         $this->enseignant_id = null;
         $this->categorie_id = null;
+        $this->image = '';
+        $this->tagid = null;
     }
+
+    // public function ajouterTag($tagId){
+    //     $query = "INSERT INTO cours_tags (course_id, tag_id) VALUES (:course_id, :tag_id)";
+    //     $stmt = $this->db->prepare($query);
+    //     $stmt->bindParam(':course_id', $this->id, PDO::PARAM_INT);
+    //     $stmt->bindParam(':tag_id', $tagId, PDO::PARAM_INT);
+    //     return $stmt->execute();
+    // }
+
+    // public function afficherDetails() {
+    //     $query = "SELECT c.*, u.nom as teacher_name, cat.nom as category_name 
+    //               FROM cours c
+    //               JOIN utilisateurs u ON c.enseignant_id = u.id
+    //               JOIN categories cat ON c.categorie_id = cat.id
+    //               WHERE c.id = ?";
+    //     $stmt = $this->db->prepare($query);
+    //     $stmt->bindParam(':id', $this->id, PDO::PARAM_INT);
+    //     $stmt->execute();
+    //     return $stmt->fetch(PDO::FETCH_ASSOC);
+    // }
+
 
     public function getAll($page = 1, $limit = 12) {
         $offset = ($page - 1) * $limit;
