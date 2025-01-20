@@ -1,10 +1,13 @@
 <?php
 
+require_once __DIR__ . '/../config/database.php';
+
 class Course {
     private $db;
 
     public function __construct($db) {
-        $this->db = $db;
+        $db = new DatabaseConnection();
+        $this->db = $db->connect();
     }
 
     public function getAll($page = 1, $limit = 10) {
