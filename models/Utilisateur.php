@@ -2,18 +2,30 @@
 require_once __DIR__ . '/../config/database.php';
 class User {
     private $db;
+    private $id;
+    private $role;
+    private $name;
+    private $email;
+    private $password;
 
-    public function __construct($db) {
+    public function __construct($db, $id = null, $role = null, $name = null, $email = null, $password = null) {
         $db = new DatabaseConnection();
         $this->db = $db->connect();
+        $this->id = $id;
+        $this->role = $role;
+        $this->name = $name;
+        $this->email = $email;
+        $this->password = $password;
     }
 
     public function hashPassword($password) {
-        return password_hash($password, PASSWORD_DEFAULT);
+        $this->password = password_hash($password, PASSWORD_DEFAULT);
+        return $this->password;
     }
 
     public function checkPassword($password, $hashedPassword) {
-        return password_verify($password, $hashedPassword);
+        $this->password = password_verify($password, $hashedPassword);
+        return $this->password;
     }
 
     public function register($nom, $email, $password, $role) {
@@ -29,17 +41,22 @@ class User {
     }
 
     public function login($email, $password) {
-        $query = "SELECT * FROM utilisateurs WHERE email = ?";
-        $stmt = $this->db->prepare($query);
-        $stmt->execute([$email]);
-        $user = $stmt->fetch(PDO::FETCH_ASSOC);
-    
-        if ($user && $this->checkPassword($password, $user['mot_de_passe'])) {
-            $_SESSION['user_id'] = $user['id'];
-            $_SESSION['role'] = $user['role'];
-            $_SESSION['name'] = $user['nom'];
-            return $user; // Change this line to return the user object
-        } else {
+        try {
+            $query = "SELECT * FROM utilisateurs WHERE email = ?";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([$email]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+            if ($user && $this->checkPassword($password, $user['mot_de_passe'])) {
+                $_SESSION['user_id'] = $user['id'];
+                $_SESSION['role'] = $user['role'];
+                $_SESSION['name'] = $user['nom'];
+                return $user; 
+            } else {
+                return false;
+            }
+        } catch (PDOException $e) {
+            error_log('Login error: ' . $e->getMessage());
             return false;
         }
     }
@@ -51,7 +68,7 @@ class User {
             $stmt->execute([$id]);
             return $stmt->fetch(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            error_log('Get user error: ' . $e->getMessage());
+            error_log('Get user by ID error: ' . $e->getMessage());
             return false;
         }
     }

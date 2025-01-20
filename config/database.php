@@ -1,10 +1,10 @@
 <?php
 class DatabaseConnection {
-    private $host = 'localhost';
-    private $dbname = 'youdemy';
-    private $username = 'root';
-    private $password = '';
-    private $db;
+    protected $host = 'localhost';
+    protected $dbname = 'youdemy';
+    protected $username = 'root';
+    protected $password = '';
+    protected $db;
 
     public function connect() {
         if ($this->db === null) {
