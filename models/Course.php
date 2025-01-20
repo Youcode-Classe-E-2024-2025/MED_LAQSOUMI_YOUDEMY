@@ -10,7 +10,7 @@ class Course {
         $this->db = $db->getConnection();
     }
 
-    public function getAll($page = 1, $limit = 10) {
+    public function getAll($page = 1, $limit = 12) {
         $offset = ($page - 1) * $limit;
         $query = "SELECT c.*, u.nom as teacher_name, cat.nom as category_name 
                   FROM cours c
@@ -33,7 +33,7 @@ class Course {
     }
 
 
-    public function getCoursesByKeyword($keyword, $page = 1, $limit = 10) {
+    public function getCoursesByKeyword($keyword, $page = 1, $limit = 12) {
         $offset = ($page - 1) * $limit;
         $query = "SELECT c.*, u.nom as teacher_name, cat.nom as category_name 
               FROM cours c

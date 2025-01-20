@@ -32,19 +32,18 @@ $data = isset($courses) ? $courses : (isset($results) ? $results : []);
     <!-- Header Section -->
     <div class="h-24 w-full absolute top-0 left-0 bg-primary"></div>
     <div class="h-24 z-20 relative container mx-auto flex items-center justify-between px-6">
-        <a href="index.php?action=home" class="text-xl font-extrabold italic tracking-tighter text-white uppercase">Youdemy</a>
+        <a href="index.php?action=home" class="text-xl font-extrabold italic tracking-tighter text-white uppercase">YOUDEMY</a>
         <div x-data="{ mobileMenu: false }" class="text-white text-lg fixed bottom-0 left-0 lg:relative p-6 lg:p-0 w-full lg:w-auto max-w-lg">
-            <div x-bind:class="{ 'flex': mobileMenu, 'hidden': !mobileMenu }" class="lg:flex flex-col lg:flex-row items-center justify-center bg-primary lg:bg-transparent pt-6 pb-8 lg:p-0 -mb-6 lg:m-0 rounded-t-3xl shadow-2xl lg:shadow-none">
+            <div x-bind:class="{ 'flex': mobileMenu, 'hidden': !mobileMenu }" class="lg:flex flex-col lg:flex-row items-center justify-center bg-primary lg:bg-transparent pt-6 pb-8 lg:m-auto lg:gap-5 lg:p-0 -mb-6 lg:m-0 rounded-t-3xl shadow-2xl lg:shadow-none">
                 <?php if ($role === 'etudiant'): ?>
                     <span class="my-2 lg:ml-6">Welcome, <?= htmlspecialchars($userName) ?></span>
                     <a href="index.php?action=myCourses" class="my-2 lg:ml-6">My Courses</a>
-                    <a href="index.php?action=profile" class="my-2 lg:ml-6">Profile</a>
+                    <a href="index.php?action=courses" class="my-2 lg:ml-6">Courses</a>
                     <a href="index.php?action=logout" class="my-2 lg:ml-6">Logout</a>
                 <?php elseif ($role === 'teacher'): ?>
                     <span class="my-2 lg:ml-6">Welcome, <?= htmlspecialchars($userName) ?></span>
                     <a href="index.php?action=teacherDashboard" class="my-2 lg:ml-6">Dashboard</a>
                     <a href="index.php?action=createCourse" class="my-2 lg:ml-6">Create Course</a>
-                    <a href="index.php?action=profile" class="my-2 lg:ml-6">Profile</a>
                     <a href="index.php?action=logout" class="my-2 lg:ml-6">Logout</a>
                 <?php else: ?>
                     <a href="index.php?action=courses" class="my-2 lg:ml-6">Courses</a>
@@ -144,11 +143,18 @@ $data = isset($courses) ? $courses : (isset($results) ? $results : []);
                 <div class="p-6">
                     <h3 class="text-xl font-bold mb-2"><?= htmlspecialchars($item['titre']) ?></h3>
                     <p class="text-gray-600 mb-4"><?= htmlspecialchars(substr($item['description'], 0, 100)) ?>...</p>
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="text-sm font-semibold">Teacher: <?= htmlspecialchars($item['teacher_name']) ?></span>
-                        <span class="text-primary font-bold"><?= htmlspecialchars($item['category_name']) ?></span>
-                    </div>
-                    <div class="text-sm text-gray-500"><?= htmlspecialchars($item['contenu']) ?></div>
+                    <?php if ($role === 'etudiant' || $role === 'teacher'): ?>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-semibold">Teacher: <?= htmlspecialchars($item['teacher_name']) ?></span>
+                            <span class="text-primary font-bold"><?= htmlspecialchars($item['category_name']) ?></span>
+                        </div>
+                        <div class="text-sm text-gray-500"><?= htmlspecialchars($item['contenu']) ?></div>
+                    <?php else: ?>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-primary font-bold"><?= htmlspecialchars($item['category_name']) ?></span>
+                        </div>
+                        <p class="text-sm text-gray-500">Login to see more details</p>
+                    <?php endif; ?>
                 </div>
             </div>
             <?php endforeach; ?>

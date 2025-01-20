@@ -12,7 +12,7 @@ class CourseController {
 
     public function getAll() {
         $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-        $limit = 10;
+        $limit = 12;
         $courses = $this->course->getAll($page, $limit);
         $totalCourses = $this->course->getTotalCourses();
         $totalPages = ceil($totalCourses / $limit);
@@ -32,7 +32,7 @@ class CourseController {
     public function handleSearch() {
         $keyword = isset($_GET['keyword']) ? $_GET['keyword'] : '';
         $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-        $limit = 10;
+        $limit = 12;
     
         $results = $this->course->getCoursesByKeyword($keyword, $page, $limit);
         $totalCourses = $this->course->getTotalCoursesByKeyword($keyword);
