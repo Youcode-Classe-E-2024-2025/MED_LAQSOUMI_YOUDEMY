@@ -18,6 +18,17 @@ CREATE TABLE utilisateurs (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Créer la table inscriptions
+CREATE TABLE inscriptions (
+    etudiant_id INT,
+    cours_id INT,
+    date_inscription TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (etudiant_id, cours_id),
+    FOREIGN KEY (etudiant_id) REFERENCES utilisateurs(id) ON DELETE CASCADE,
+    FOREIGN KEY (cours_id) REFERENCES cours(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Créer la table cours
 CREATE TABLE cours (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -49,16 +60,6 @@ CREATE TABLE cours_tags (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Créer la table inscriptions
-CREATE TABLE inscriptions (
-    etudiant_id INT,
-    cours_id INT,
-    date_inscription TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (etudiant_id, cours_id),
-    FOREIGN KEY (etudiant_id) REFERENCES utilisateurs(id) ON DELETE CASCADE,
-    FOREIGN KEY (cours_id) REFERENCES cours(id) ON DELETE CASCADE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
 
 -- Insérer 30 données dans la table catégories
 INSERT INTO categories (nom) VALUES

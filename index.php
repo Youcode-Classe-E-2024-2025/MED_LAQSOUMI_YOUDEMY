@@ -34,7 +34,7 @@ switch ($action) {
         require_once 'views/profile.php';
         break;
     case 'myCourses':
-        require_once 'views/myCourses.php';
+        $courseController->getMyCourses();
         break;
     case 'teacherDashboard':
         require_once 'views/teacher_Dashboard.php';

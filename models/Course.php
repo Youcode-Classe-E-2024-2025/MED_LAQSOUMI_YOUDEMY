@@ -47,6 +47,20 @@ class Course {
     // }
 
 
+    public function getCourseById($id) {
+        $query = "SELECT c.*, u.nom as teacher_name, cat.nom as category_name 
+                  FROM cours c
+                  JOIN utilisateurs u ON c.enseignant_id = u.id
+                  JOIN categories cat ON c.categorie_id = cat.id
+                  WHERE c.id = ?";
+        $stmt = $this->db->prepare($query);
+        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+
+
     public function getAll($page = 1, $limit = 12) {
         $offset = ($page - 1) * $limit;
         $query = "SELECT c.*, u.nom as teacher_name, cat.nom as category_name 
@@ -108,5 +122,19 @@ class Course {
 
         return $stmt->fetchColumn();
     }
-}
 
+    public function getMyCourses($user_id) {
+        $query = "SELECT c.*, u.nom as teacher_name, cat.nom as category_name, i.etudiant_id as inscrit
+                  FROM inscriptions i 
+                  JOIN cours c ON i.cours_id = c.id
+                  JOIN utilisateurs u ON c.enseignant_id = u.id
+                  JOIN categories cat ON c.categorie_id = cat.id
+                  WHERE i.etudiant_id = :user_id";
+        
+        $stmt = $this->db->prepare($query);
+        $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    
+}

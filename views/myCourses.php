@@ -1,3 +1,10 @@
+<?php
+$role = isset($_SESSION['role']) ? $_SESSION['role'] : null;
+$userName = isset($_SESSION['name']) ? $_SESSION['name'] : '';
+$userId = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null;
+$image = isset($_SESSION['image']) ? $_SESSION['image'] : '';
+$titre = isset($_SESSION['titre']) ? $_SESSION['titre'] : '';
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -72,48 +79,25 @@
                     </div>
                 </div>
 
-                <!-- Enrolled Courses -->
-                <div class="bg-white rounded-lg shadow p-6">
-                    <h3 class="text-xl font-semibold mb-4">Enrolled Courses</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <img src="https://via.placeholder.com/300x200" alt="Course Thumbnail" class="w-full h-40 object-cover rounded-lg mb-4">
-                            <h4 class="font-semibold mb-2">Introduction to Python</h4>
-                            <p class="text-sm text-gray-600 mb-2">Learn the basics of Python programming</p>
-                            <a href="#" class="text-primary hover:underline">Continue Learning</a>
-                        </div>
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <img src="https://via.placeholder.com/300x200" alt="Course Thumbnail" class="w-full h-40 object-cover rounded-lg mb-4">
-                            <h4 class="font-semibold mb-2">Web Development Bootcamp</h4>
-                            <p class="text-sm text-gray-600 mb-2">Master HTML, CSS, and JavaScript</p>
-                            <a href="#" class="text-primary hover:underline">Continue Learning</a>
-                        </div>
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <img src="https://via.placeholder.com/300x200" alt="Course Thumbnail" class="w-full h-40 object-cover rounded-lg mb-4">
-                            <h4 class="font-semibold mb-2">Data Science Fundamentals</h4>
-                            <p class="text-sm text-gray-600 mb-2">Introduction to data analysis and visualization</p>
-                            <a href="#" class="text-primary hover:underline">Continue Learning</a>
-                        </div>
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <img src="https://via.placeholder.com/300x200" alt="Course Thumbnail" class="w-full h-40 object-cover rounded-lg mb-4">
-                            <h4 class="font-semibold mb-2">Machine Learning Basics</h4>
-                            <p class="text-sm text-gray-600 mb-2">Learn the fundamentals of machine learning</p>
-                            <a href="#" class="text-primary hover:underline">Start Course</a>
-                        </div>
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <img src="https://via.placeholder.com/300x200" alt="Course Thumbnail" class="w-full h-40 object-cover rounded-lg mb-4">
-                            <h4 class="font-semibold mb-2">UX/UI Design Principles</h4>
-                            <p class="text-sm text-gray-600 mb-2">Master the art of user-centered design</p>
-                            <a href="#" class="text-primary hover:underline">Start Course</a>
-                        </div>
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <img src="https://via.placeholder.com/300x200" alt="Course Thumbnail" class="w-full h-40 object-cover rounded-lg mb-4">
-                            <h4 class="font-semibold mb-2">Digital Marketing Strategies</h4>
-                            <p class="text-sm text-gray-600 mb-2">Learn effective online marketing techniques</p>
-                            <a href="#" class="text-primary hover:underline">Start Course</a>
-                        </div>
+                <!-- My Courses -->
+                <?php if ($role === 'etudiant') :?>
+                <div class="bg-white rounded-lg shadow p-6 mb-6">
+                    <h3 class="text-xl font-semibold mb-4">My Courses</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <?php foreach ($courses as $item) : ?>
+                            <div class="bg-gray-100 p-4 rounded-lg">
+                                <h4 class="font-semibold mb-2"><?= htmlspecialchars($item['titre']) ?></h4>
+                                <img src="<?= htmlspecialchars($item['image']) ?>" alt="Thumbnail" class="w-full h-48 object-cover mb-2">
+                                <p class="text-sm mb-2">Teacher: <?= htmlspecialchars($item['teacher_name']) ?></p>
+                                <p class="text-sm mb-2">Category: <?= htmlspecialchars($item['category_name']) ?></p>
+                                <p class="text-sm mb-2">Description: <?= htmlspecialchars($item['description']) ?></p>
+                                <p class="text-sm mb-2">contenu: <?= htmlspecialchars($item['contenu']) ?></p>
+                                <a href="index.php?action=course&id=<?= htmlspecialchars($item['id']) ?>" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-secondary">View Course</a>
+                            </div>
+                        <?php endforeach; ?>
                     </div>
                 </div>
+                <?php endif; ?>
             </div>
         </main>
     </div>
