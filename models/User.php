@@ -57,4 +57,11 @@ class User extends Model {
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    public static function getAll() {
+        $db = self::getConnection();
+        $stmt = $db->prepare("SELECT * FROM utilisateurs ORDER BY role, nom");
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }

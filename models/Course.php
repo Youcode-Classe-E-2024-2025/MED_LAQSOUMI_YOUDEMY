@@ -70,7 +70,9 @@ class Course extends Model {
 
     public static function getByTeacher($teacherId) {
         $db = self::getConnection();
-        $stmt = $db->prepare("SELECT c.*, cat.nom as categorie_nom FROM cours c 
+        $stmt = $db->prepare("SELECT c.*, cat.nom as categorie_nom,
+                             (SELECT COUNT(*) FROM inscriptions WHERE cours_id = c.id) as nombre_inscrits
+                             FROM cours c 
                              JOIN categories cat ON c.categorie_id = cat.id 
                              WHERE c.enseignant_id = ?");
         $stmt->execute([$teacherId]);
@@ -170,8 +172,8 @@ class Course extends Model {
             // Add pagination
             $offset = ($page - 1) * $perPage;
             $query .= " LIMIT ? OFFSET ?";
-            $params[] = $perPage;
-            $params[] = $offset;
+            $params[] = (int)$perPage;
+            $params[] = (int)$offset;
 
             $stmt = $db->prepare($query);
             $stmt->execute($params);
@@ -189,6 +191,40 @@ class Course extends Model {
             return $courses;
         } catch (Exception $e) {
             throw new Exception("Failed to fetch courses: " . $e->getMessage());
+        }
+    }
+
+    public static function myEnrollments($studentId, $page = 1, $perPage = 12) {
+        $db = self::getConnection();
+        try {
+            $query = "SELECT c.*, cat.nom as categorie_nom, u.nom as enseignant_nom,
+                     i.completed, i.progress, i.date_inscription,
+                     (SELECT COUNT(*) FROM inscriptions WHERE cours_id = c.id) as nombre_inscrits
+                     FROM inscriptions i
+                     JOIN cours c ON i.cours_id = c.id
+                     JOIN categories cat ON c.categorie_id = cat.id
+                     JOIN utilisateurs u ON c.enseignant_id = u.id
+                     WHERE i.etudiant_id = ?
+                     ORDER BY i.date_inscription DESC
+                     LIMIT ? OFFSET ?";
+
+            $offset = ($page - 1) * $perPage;
+            $stmt = $db->prepare($query);
+            $stmt->execute([$studentId, (int)$perPage, (int)$offset]);
+            $courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Get tags for each course
+            foreach ($courses as &$course) {
+                $tagStmt = $db->prepare("SELECT t.* FROM tags t 
+                                       JOIN cours_tags ct ON t.id = ct.tag_id 
+                                       WHERE ct.cours_id = ?");
+                $tagStmt->execute([$course['id']]);
+                $course['tags'] = $tagStmt->fetchAll(PDO::FETCH_ASSOC);
+            }
+
+            return $courses;
+        } catch (Exception $e) {
+            throw new Exception("Failed to fetch enrolled courses: " . $e->getMessage());
         }
     }
 }

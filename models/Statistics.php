@@ -20,23 +20,24 @@ class Statistics extends Model {
 
             // Most popular courses
             $stmt = $db->query("SELECT c.*, u.nom as enseignant_nom, 
-                              COUNT(i.id) as enrollment_count
+                              COUNT(DISTINCT i.etudiant_id) as enrollment_count
                               FROM cours c
                               JOIN utilisateurs u ON c.enseignant_id = u.id
                               LEFT JOIN inscriptions i ON c.id = i.cours_id
-                              GROUP BY c.id
+                              GROUP BY c.id, c.titre, c.description, c.contenu, c.image, 
+                                       c.categorie_id, c.enseignant_id, c.created_at, c.updated_at, u.nom
                               ORDER BY enrollment_count DESC
                               LIMIT 5");
             $stats['popular_courses'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             // Top teachers
-            $stmt = $db->query("SELECT u.nom, COUNT(c.id) as course_count,
+            $stmt = $db->query("SELECT u.nom, COUNT(DISTINCT c.id) as course_count,
                               COUNT(DISTINCT i.etudiant_id) as student_count
                               FROM utilisateurs u
                               JOIN cours c ON u.id = c.enseignant_id
                               LEFT JOIN inscriptions i ON c.id = i.cours_id
                               WHERE u.role = 'enseignant'
-                              GROUP BY u.id
+                              GROUP BY u.id, u.nom
                               ORDER BY student_count DESC
                               LIMIT 5");
             $stats['top_teachers'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -56,7 +57,7 @@ class Statistics extends Model {
             $stmt = $db->prepare("SELECT 
                 COUNT(DISTINCT c.id) as total_courses,
                 COUNT(DISTINCT i.etudiant_id) as total_students,
-                AVG(i.completed) * 100 as avg_completion_rate
+                COALESCE(AVG(CASE WHEN i.completed = 1 THEN 100 ELSE 0 END), 0) as avg_completion_rate
                 FROM cours c
                 LEFT JOIN inscriptions i ON c.id = i.cours_id
                 WHERE c.enseignant_id = ?");
@@ -64,11 +65,12 @@ class Statistics extends Model {
             $stats['teaching'] = $stmt->fetch(PDO::FETCH_ASSOC);
 
             // Most popular course
-            $stmt = $db->prepare("SELECT c.*, COUNT(i.id) as enrollment_count
+            $stmt = $db->prepare("SELECT c.*, COUNT(DISTINCT i.etudiant_id) as enrollment_count
                                 FROM cours c
                                 LEFT JOIN inscriptions i ON c.id = i.cours_id
                                 WHERE c.enseignant_id = ?
-                                GROUP BY c.id
+                                GROUP BY c.id, c.titre, c.description, c.contenu, c.image, 
+                                         c.categorie_id, c.enseignant_id, c.created_at, c.updated_at
                                 ORDER BY enrollment_count DESC
                                 LIMIT 1");
             $stmt->execute([$teacherId]);
@@ -89,23 +91,27 @@ class Statistics extends Model {
             $stmt = $db->prepare("SELECT 
                 COUNT(*) as total_courses,
                 SUM(CASE WHEN completed = 1 THEN 1 ELSE 0 END) as completed_courses,
-                (SUM(CASE WHEN completed = 1 THEN 1 ELSE 0 END) * 100.0 / COUNT(*)) as completion_rate
+                COALESCE((SUM(CASE WHEN completed = 1 THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0)), 0) as completion_rate
                 FROM inscriptions
                 WHERE etudiant_id = ?");
             $stmt->execute([$studentId]);
             $stats['learning'] = $stmt->fetch(PDO::FETCH_ASSOC);
 
             // Recent activity
-            $stmt = $db->prepare("SELECT i.*, c.titre,
+            $stmt = $db->prepare("SELECT i.completed, i.progress, i.date_inscription, 
+                                i.date_completion, c.titre,
                                 CASE 
-                                    WHEN i.completed = 1 THEN 'Completed the course'
-                                    ELSE 'Enrolled in course'
-                                END as description,
-                                DATE_FORMAT(i.date_inscription, '%Y-%m-%d') as date
+                                    WHEN i.completed = 1 THEN 'Completed'
+                                    ELSE 'Enrolled'
+                                END as status
                                 FROM inscriptions i
                                 JOIN cours c ON i.cours_id = c.id
                                 WHERE i.etudiant_id = ?
-                                ORDER BY i.date_inscription DESC
+                                ORDER BY 
+                                    CASE 
+                                        WHEN i.completed = 1 THEN i.date_completion 
+                                        ELSE i.date_inscription 
+                                    END DESC
                                 LIMIT 5");
             $stmt->execute([$studentId]);
             $stats['recent_activity'] = $stmt->fetchAll(PDO::FETCH_ASSOC);

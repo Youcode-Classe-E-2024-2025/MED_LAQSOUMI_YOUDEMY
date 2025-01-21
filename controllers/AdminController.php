@@ -23,8 +23,7 @@ class AdminController {
             exit;
         }
 
-        $teachers = User::getTeachers();
-        $students = User::getStudents();
+        $utilisateurs = User::getAll();
         require_once __DIR__ . '/../views/admin/users/index.php';
     }
 
@@ -100,17 +99,13 @@ class AdminController {
                     $tags = array_map('trim', explode(',', $_POST['tags']));
                     Tag::bulkCreate($tags);
                     $_SESSION['success'] = "Tags created successfully.";
-                } else {
-                    // Single tag
-                    Tag::create(['nom' => $_POST['nom']]);
-                    $_SESSION['success'] = "Tag created successfully.";
                 }
             } catch (Exception $e) {
-                $_SESSION['error'] = "Error creating tag(s): " . $e->getMessage();
+                $_SESSION['error'] = "Error creating tags: " . $e->getMessage();
             }
         }
 
-        $tags = Tag::findAll();
+        $tags = Tag::getWithCourseCount();
         require_once __DIR__ . '/../views/admin/tags/index.php';
     }
 
@@ -123,8 +118,12 @@ class AdminController {
         $tagId = $_GET['id'] ?? null;
         if ($tagId) {
             try {
-                Tag::delete($tagId);
-                $_SESSION['success'] = "Tag deleted successfully.";
+                if (Tag::canDelete($tagId)) {
+                    Tag::delete($tagId);
+                    $_SESSION['success'] = "Tag deleted successfully.";
+                } else {
+                    $_SESSION['error'] = "Cannot delete tag: it is used by courses.";
+                }
             } catch (Exception $e) {
                 $_SESSION['error'] = "Error deleting tag: " . $e->getMessage();
             }
