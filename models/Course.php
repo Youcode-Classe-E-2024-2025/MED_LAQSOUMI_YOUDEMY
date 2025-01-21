@@ -240,4 +240,209 @@ class Course {
             throw new Exception('Error checking enrollment status');
         }
     }
+
+    public function addCourse($data) {
+        try {
+            $this->db->beginTransaction();
+
+            // Insert course
+            $query = "INSERT INTO cours (titre, description, contenu, enseignant_id, categorie_id, image) 
+                     VALUES (:titre, :description, :contenu, :enseignant_id, :categorie_id, :image)";
+            
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(':titre', $data['titre'], PDO::PARAM_STR);
+            $stmt->bindParam(':description', $data['description'], PDO::PARAM_STR);
+            $stmt->bindParam(':contenu', $data['contenu'], PDO::PARAM_STR);
+            $stmt->bindParam(':enseignant_id', $data['enseignant_id'], PDO::PARAM_INT);
+            $stmt->bindParam(':categorie_id', $data['categorie_id'], PDO::PARAM_INT);
+            $stmt->bindParam(':image', $data['image'], PDO::PARAM_STR);
+            
+            if (!$stmt->execute()) {
+                throw new Exception('Failed to add course');
+            }
+
+            $courseId = $this->db->lastInsertId();
+
+            // Add tags if provided
+            if (!empty($data['tags'])) {
+                $tagQuery = "INSERT INTO cours_tags (cours_id, tag_id) VALUES (:cours_id, :tag_id)";
+                $tagStmt = $this->db->prepare($tagQuery);
+                
+                foreach ($data['tags'] as $tagId) {
+                    $tagStmt->bindParam(':cours_id', $courseId, PDO::PARAM_INT);
+                    $tagStmt->bindParam(':tag_id', $tagId, PDO::PARAM_INT);
+                    if (!$tagStmt->execute()) {
+                        throw new Exception('Failed to add course tags');
+                    }
+                }
+            }
+
+            $this->db->commit();
+            return $courseId;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
+    }
+
+    public function updateCourse($courseId, $data) {
+        try {
+            $this->db->beginTransaction();
+
+            // Update course
+            $query = "UPDATE cours 
+                     SET titre = :titre, 
+                         description = :description, 
+                         contenu = :contenu, 
+                         categorie_id = :categorie_id, 
+                         image = :image
+                     WHERE id = :id AND enseignant_id = :enseignant_id";
+            
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(':titre', $data['titre'], PDO::PARAM_STR);
+            $stmt->bindParam(':description', $data['description'], PDO::PARAM_STR);
+            $stmt->bindParam(':contenu', $data['contenu'], PDO::PARAM_STR);
+            $stmt->bindParam(':categorie_id', $data['categorie_id'], PDO::PARAM_INT);
+            $stmt->bindParam(':image', $data['image'], PDO::PARAM_STR);
+            $stmt->bindParam(':id', $courseId, PDO::PARAM_INT);
+            $stmt->bindParam(':enseignant_id', $data['enseignant_id'], PDO::PARAM_INT);
+            
+            if (!$stmt->execute()) {
+                throw new Exception('Failed to update course');
+            }
+
+            // Update tags
+            if (isset($data['tags'])) {
+                // Remove existing tags
+                $deleteTagsQuery = "DELETE FROM cours_tags WHERE cours_id = :cours_id";
+                $deleteStmt = $this->db->prepare($deleteTagsQuery);
+                $deleteStmt->bindParam(':cours_id', $courseId, PDO::PARAM_INT);
+                $deleteStmt->execute();
+
+                // Add new tags
+                if (!empty($data['tags'])) {
+                    $tagQuery = "INSERT INTO cours_tags (cours_id, tag_id) VALUES (:cours_id, :tag_id)";
+                    $tagStmt = $this->db->prepare($tagQuery);
+                    
+                    foreach ($data['tags'] as $tagId) {
+                        $tagStmt->bindParam(':cours_id', $courseId, PDO::PARAM_INT);
+                        $tagStmt->bindParam(':tag_id', $tagId, PDO::PARAM_INT);
+                        if (!$tagStmt->execute()) {
+                            throw new Exception('Failed to update course tags');
+                        }
+                    }
+                }
+            }
+
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
+    }
+
+    public function deleteCourse($courseId, $teacherId) {
+        try {
+            $this->db->beginTransaction();
+
+            // Verify the course belongs to the teacher
+            $checkQuery = "SELECT id FROM cours WHERE id = :id AND enseignant_id = :enseignant_id";
+            $checkStmt = $this->db->prepare($checkQuery);
+            $checkStmt->bindParam(':id', $courseId, PDO::PARAM_INT);
+            $checkStmt->bindParam(':enseignant_id', $teacherId, PDO::PARAM_INT);
+            $checkStmt->execute();
+
+            if (!$checkStmt->fetch()) {
+                throw new Exception('Course not found or unauthorized');
+            }
+
+            // Delete course tags
+            $deleteTagsQuery = "DELETE FROM cours_tags WHERE cours_id = :cours_id";
+            $deleteTagsStmt = $this->db->prepare($deleteTagsQuery);
+            $deleteTagsStmt->bindParam(':cours_id', $courseId, PDO::PARAM_INT);
+            $deleteTagsStmt->execute();
+
+            // Delete course enrollments
+            $deleteEnrollQuery = "DELETE FROM inscriptions WHERE cours_id = :cours_id";
+            $deleteEnrollStmt = $this->db->prepare($deleteEnrollQuery);
+            $deleteEnrollStmt->bindParam(':cours_id', $courseId, PDO::PARAM_INT);
+            $deleteEnrollStmt->execute();
+
+            // Delete the course
+            $deleteCourseQuery = "DELETE FROM cours WHERE id = :id AND enseignant_id = :enseignant_id";
+            $deleteCourseStmt = $this->db->prepare($deleteCourseQuery);
+            $deleteCourseStmt->bindParam(':id', $courseId, PDO::PARAM_INT);
+            $deleteCourseStmt->bindParam(':enseignant_id', $teacherId, PDO::PARAM_INT);
+            
+            if (!$deleteCourseStmt->execute()) {
+                throw new Exception('Failed to delete course');
+            }
+
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
+    }
+
+    public function getEnrollments($courseId, $teacherId) {
+        try {
+            $query = "SELECT i.*, u.nom as student_name, u.email as student_email
+                     FROM inscriptions i
+                     JOIN utilisateurs u ON i.etudiant_id = u.id
+                     JOIN cours c ON i.cours_id = c.id
+                     WHERE c.id = :cours_id AND c.enseignant_id = :enseignant_id
+                     ORDER BY i.date_inscription DESC";
+            
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(':cours_id', $courseId, PDO::PARAM_INT);
+            $stmt->bindParam(':enseignant_id', $teacherId, PDO::PARAM_INT);
+            $stmt->execute();
+            
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            throw new Exception('Failed to get course enrollments');
+        }
+    }
+
+    public function getTeacherStatistics($teacherId) {
+        try {
+            $stats = [];
+            
+            // Get total courses
+            $coursesQuery = "SELECT COUNT(*) FROM cours WHERE enseignant_id = :enseignant_id";
+            $coursesStmt = $this->db->prepare($coursesQuery);
+            $coursesStmt->bindParam(':enseignant_id', $teacherId, PDO::PARAM_INT);
+            $coursesStmt->execute();
+            $stats['total_courses'] = $coursesStmt->fetchColumn();
+
+            // Get total students
+            $studentsQuery = "SELECT COUNT(DISTINCT i.etudiant_id) 
+                            FROM inscriptions i
+                            JOIN cours c ON i.cours_id = c.id
+                            WHERE c.enseignant_id = :enseignant_id";
+            $studentsStmt = $this->db->prepare($studentsQuery);
+            $studentsStmt->bindParam(':enseignant_id', $teacherId, PDO::PARAM_INT);
+            $studentsStmt->execute();
+            $stats['total_students'] = $studentsStmt->fetchColumn();
+
+            // Get enrollments per course
+            $enrollmentsQuery = "SELECT c.titre, COUNT(i.id) as enrollment_count
+                               FROM cours c
+                               LEFT JOIN inscriptions i ON c.id = i.cours_id
+                               WHERE c.enseignant_id = :enseignant_id
+                               GROUP BY c.id
+                               ORDER BY enrollment_count DESC";
+            $enrollmentsStmt = $this->db->prepare($enrollmentsQuery);
+            $enrollmentsStmt->bindParam(':enseignant_id', $teacherId, PDO::PARAM_INT);
+            $enrollmentsStmt->execute();
+            $stats['enrollments_per_course'] = $enrollmentsStmt->fetchAll(PDO::FETCH_ASSOC);
+
+            return $stats;
+        } catch (Exception $e) {
+            throw new Exception('Failed to get teacher statistics');
+        }
+    }
 }

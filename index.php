@@ -6,6 +6,8 @@ require_once __DIR__ . '/controllers/CourseController.php';
 require_once __DIR__ . '/controllers/EtudiantController.php';
 require_once __DIR__ . '/controllers/EnseignantController.php';
 require_once __DIR__ . '/controllers/AdminController.php';
+require_once __DIR__ . '/controllers/CategoryController.php';
+require_once __DIR__ . '/controllers/TagController.php';
 
 $db = DatabaseConnection::getInstance();
 $user = new UtilisateurController($db);
@@ -13,6 +15,8 @@ $courseController = new CourseController($db);
 $etudiantController = new EtudiantController($db);
 $enseignantController = new EnseignantController($db);
 $adminController = new AdminController($db);
+$categoryController = new CategoryController($db);
+$tagController = new TagController($db);
 
 $action = isset($_GET['action']) ? $_GET['action'] : 'home';
 
@@ -62,6 +66,21 @@ switch ($action) {
     case 'consulterInscriptions':
         $enseignantController->consulterInscriptions();
         break;
+    case 'course/add':
+        $courseController->addCourse();
+        break;
+    case 'course/update':
+        $courseController->updateCourse();
+        break;
+    case 'course/delete':
+        $courseController->deleteCourse();
+        break;
+    case 'course/enrollments':
+        $courseController->getEnrollments();
+        break;
+    case 'teacher/statistics':
+        $courseController->getTeacherStatistics();
+        break;
 
     // Admin routes
     case 'validerEnseignant':
@@ -89,6 +108,14 @@ switch ($action) {
         break;
     case 'inscrireCours':
         $courseController->inscrireCours();
+        break;
+
+    // Category and tag routes
+    case 'categories':
+        $categoryController->getCategories();
+        break;
+    case 'tags':
+        $tagController->getTags();
         break;
 
     default:

@@ -218,4 +218,187 @@ class CourseController
         error_log("=== End Course Enrollment ===");
         ob_end_flush();
     }
+
+    public function addCourse() {
+        try {
+            if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'enseignant') {
+                http_response_code(403);
+                echo json_encode(['error' => 'Unauthorized']);
+                return;
+            }
+
+            $data = [
+                'titre' => filter_input(INPUT_POST, 'titre', FILTER_SANITIZE_STRING),
+                'description' => filter_input(INPUT_POST, 'description', FILTER_SANITIZE_STRING),
+                'contenu' => filter_input(INPUT_POST, 'contenu', FILTER_SANITIZE_STRING),
+                'categorie_id' => filter_input(INPUT_POST, 'categorie_id', FILTER_VALIDATE_INT),
+                'enseignant_id' => $_SESSION['user_id'],
+                'image' => ''
+            ];
+
+            // Handle file upload
+            if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+                $uploadDir = __DIR__ . '/../uploads/courses/';
+                if (!file_exists($uploadDir)) {
+                    mkdir($uploadDir, 0777, true);
+                }
+
+                $fileInfo = pathinfo($_FILES['image']['name']);
+                $extension = strtolower($fileInfo['extension']);
+                $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif'];
+
+                if (!in_array($extension, $allowedExtensions)) {
+                    throw new Exception('Invalid file type');
+                }
+
+                $fileName = uniqid() . '.' . $extension;
+                $targetPath = $uploadDir . $fileName;
+
+                if (move_uploaded_file($_FILES['image']['tmp_name'], $targetPath)) {
+                    $data['image'] = 'uploads/courses/' . $fileName;
+                }
+            }
+
+            // Handle tags
+            if (isset($_POST['tags']) && is_array($_POST['tags'])) {
+                $data['tags'] = array_map('intval', $_POST['tags']);
+            }
+
+            $courseModel = new Course($this->db);
+            $courseId = $courseModel->addCourse($data);
+
+            echo json_encode(['success' => true, 'course_id' => $courseId]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+    }
+
+    public function updateCourse() {
+        try {
+            if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'enseignant') {
+                http_response_code(403);
+                echo json_encode(['error' => 'Unauthorized']);
+                return;
+            }
+
+            $courseId = filter_input(INPUT_POST, 'course_id', FILTER_VALIDATE_INT);
+            if (!$courseId) {
+                throw new Exception('Invalid course ID');
+            }
+
+            $data = [
+                'titre' => filter_input(INPUT_POST, 'titre', FILTER_SANITIZE_STRING),
+                'description' => filter_input(INPUT_POST, 'description', FILTER_SANITIZE_STRING),
+                'contenu' => filter_input(INPUT_POST, 'contenu', FILTER_SANITIZE_STRING),
+                'categorie_id' => filter_input(INPUT_POST, 'categorie_id', FILTER_VALIDATE_INT),
+                'enseignant_id' => $_SESSION['user_id'],
+                'image' => filter_input(INPUT_POST, 'current_image', FILTER_SANITIZE_STRING)
+            ];
+
+            // Handle file upload
+            if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+                $uploadDir = __DIR__ . '/../uploads/courses/';
+                if (!file_exists($uploadDir)) {
+                    mkdir($uploadDir, 0777, true);
+                }
+
+                $fileInfo = pathinfo($_FILES['image']['name']);
+                $extension = strtolower($fileInfo['extension']);
+                $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif'];
+
+                if (!in_array($extension, $allowedExtensions)) {
+                    throw new Exception('Invalid file type');
+                }
+
+                $fileName = uniqid() . '.' . $extension;
+                $targetPath = $uploadDir . $fileName;
+
+                if (move_uploaded_file($_FILES['image']['tmp_name'], $targetPath)) {
+                    // Delete old image if exists
+                    if (!empty($data['image']) && file_exists(__DIR__ . '/../' . $data['image'])) {
+                        unlink(__DIR__ . '/../' . $data['image']);
+                    }
+                    $data['image'] = 'uploads/courses/' . $fileName;
+                }
+            }
+
+            // Handle tags
+            if (isset($_POST['tags']) && is_array($_POST['tags'])) {
+                $data['tags'] = array_map('intval', $_POST['tags']);
+            }
+
+            $courseModel = new Course($this->db);
+            $courseModel->updateCourse($courseId, $data);
+
+            echo json_encode(['success' => true]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+    }
+
+    public function deleteCourse() {
+        try {
+            if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'enseignant') {
+                http_response_code(403);
+                echo json_encode(['error' => 'Unauthorized']);
+                return;
+            }
+
+            $courseId = filter_input(INPUT_POST, 'course_id', FILTER_VALIDATE_INT);
+            if (!$courseId) {
+                throw new Exception('Invalid course ID');
+            }
+
+            $courseModel = new Course($this->db);
+            $courseModel->deleteCourse($courseId, $_SESSION['user_id']);
+
+            echo json_encode(['success' => true]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+    }
+
+    public function getEnrollments() {
+        try {
+            if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'enseignant') {
+                http_response_code(403);
+                echo json_encode(['error' => 'Unauthorized']);
+                return;
+            }
+
+            $courseId = filter_input(INPUT_GET, 'course_id', FILTER_VALIDATE_INT);
+            if (!$courseId) {
+                throw new Exception('Invalid course ID');
+            }
+
+            $courseModel = new Course($this->db);
+            $enrollments = $courseModel->getEnrollments($courseId, $_SESSION['user_id']);
+
+            echo json_encode(['success' => true, 'enrollments' => $enrollments]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+    }
+
+    public function getTeacherStatistics() {
+        try {
+            if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'enseignant') {
+                http_response_code(403);
+                echo json_encode(['error' => 'Unauthorized']);
+                return;
+            }
+
+            $courseModel = new Course($this->db);
+            $stats = $courseModel->getTeacherStatistics($_SESSION['user_id']);
+
+            echo json_encode(['success' => true, 'statistics' => $stats]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+    }
 }
