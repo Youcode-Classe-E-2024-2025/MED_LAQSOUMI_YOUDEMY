@@ -285,8 +285,19 @@ $data = isset($courses) ? $courses : (isset($results) ? $results : []);
         }
 
         function enrollInCourse(cours_id, user_id) {
-            console.log('Enrolling in course:', cours_id, 'for user:', user_id);
-            window.location.href = 'index.php?action=inscrireCours&user_id=' + user_id + '&cours_id=' + cours_id;
+            fetch('index.php?action=inscrireCours&user_id=' + user_id + '&cours_id=' + cours_id)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                        closeModal();
+                    } else {
+                        alert(data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
             closeModal();
         }
 
