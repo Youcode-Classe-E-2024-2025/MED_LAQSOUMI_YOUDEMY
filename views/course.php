@@ -161,7 +161,6 @@ $data = isset($courses) ? $courses : (isset($results) ? $results : []);
                             <div class="flex items-center justify-between mb-2">
                                 <span class="text-primary font-bold"><?= htmlspecialchars($item['category_name']) ?></span>
                             </div>
-                            <p class="text-sm text-gray-500">Login to see more details</p>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -265,7 +264,15 @@ $data = isset($courses) ? $courses : (isset($results) ? $results : []);
     </div>
 
     <script>
+        // Assume userRole is set dynamically, e.g., 'etudiant', 'guest', etc.
+        const userRole = '<?= $role ?>'; // Dynamically get the role from the backend.
+
         function openModal(course) {
+            if (userRole !== 'etudiant') {
+                console.warn('Only users with the "etudiant" role can access this feature.');
+                return; // Exit the function if the user is not an 'etudiant'.
+            }
+
             document.getElementById('modal-title').textContent = course.titre;
             document.getElementById('modal-image').src = course.image;
             document.getElementById('modal-description').textContent = course.description;
@@ -273,7 +280,8 @@ $data = isset($courses) ? $courses : (isset($results) ? $results : []);
             document.getElementById('modal-category').textContent = 'Category: ' + course.category_name;
             document.getElementById('modal-content').textContent = 'Content: ' + course.contenu;
 
-            document.getElementById('enrollButton').onclick = function() {
+            const enrollButton = document.getElementById('enrollButton');
+            enrollButton.onclick = function() {
                 enrollInCourse(course.id, <?= $user_id ?>);
             };
 
@@ -285,29 +293,26 @@ $data = isset($courses) ? $courses : (isset($results) ? $results : []);
         }
 
         function enrollInCourse(cours_id, user_id) {
-            fetch('index.php?action=inscrireCours&user_id=' + user_id + '&cours_id=' + cours_id)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert(data.message);
-                        closeModal();
-                    } else {
-                        alert(data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                });
+            console.log('Enrolling in course:', cours_id, 'for user:', user_id);
+            fetch('index.php?action=inscrireCours&user_id=' + user_id + '&cours_id=' + cours_id, {
+                method: 'GET'
+            }).then(function(response) {
+                if (response.ok) {
+                    window.location.href = 'index.php?action=myCourses';
+                } else {
+                    console.error('Enrollment failed.');
+                }
+            });
             closeModal();
         }
 
         // Close the modal if the user clicks outside of it
         window.onclick = function(event) {
-            var modal = document.getElementById('courseModal');
-            if (event.target == modal) {
+            const modal = document.getElementById('courseModal');
+            if (event.target === modal) {
                 closeModal();
             }
-        }
+        };
     </script>
 </body>
 
