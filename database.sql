@@ -18,17 +18,6 @@ CREATE TABLE utilisateurs (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Créer la table inscriptions
-CREATE TABLE inscriptions (
-    etudiant_id INT,
-    cours_id INT,
-    date_inscription TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (etudiant_id, cours_id),
-    FOREIGN KEY (etudiant_id) REFERENCES utilisateurs(id) ON DELETE CASCADE,
-    FOREIGN KEY (cours_id) REFERENCES cours(id) ON DELETE CASCADE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
 -- Créer la table cours
 CREATE TABLE cours (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -41,6 +30,18 @@ CREATE TABLE cours (
     FOREIGN KEY (categorie_id) REFERENCES categories(id) ON DELETE CASCADE,
     FOREIGN KEY (enseignant_id) REFERENCES utilisateurs(id) ON DELETE CASCADE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Créer la table inscriptions
+CREATE TABLE inscriptions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    etudiant_id INT,
+    cours_id INT,
+    status ENUM('active', 'completed', 'dropped') DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (etudiant_id) REFERENCES utilisateurs(id) ON DELETE CASCADE,
+    FOREIGN KEY (cours_id) REFERENCES cours(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_enrollment (etudiant_id, cours_id)
 );
 
 -- Créer la table tags
@@ -158,10 +159,10 @@ INSERT INTO cours_tags (cours_id, tag_id) VALUES
 (24, 19), (25, 16), (26, 14), (27, 9), (28, 8);
 
 -- Insérer 30 données dans la table inscriptions
-INSERT INTO inscriptions (etudiant_id, cours_id) VALUES
-(1, 1), (2, 2), (3, 3), (4, 4), (5, 5),
-(6, 6), (7, 7), (8, 8), (9, 9), (10, 10),
-(11, 11), (12, 12), (13, 13), (14, 14), (15, 15),
-(16, 16), (17, 17), (18, 18), (19, 19), (20, 20),
-(21, 21), (22, 22), (23, 23), (24, 24), (25, 25),
-(26, 26), (27, 27), (28, 28), (29, 29), (30, 30);
+INSERT INTO inscriptions (etudiant_id, cours_id, status) VALUES
+(1, 1, 'active'), (2, 2, 'active'), (3, 3, 'active'), (4, 4, 'active'), (5, 5, 'active'),
+(6, 6, 'active'), (7, 7, 'active'), (8, 8, 'active'), (9, 9, 'active'), (10, 10, 'active'),
+(11, 11, 'active'), (12, 12, 'active'), (13, 13, 'active'), (14, 14, 'active'), (15, 15, 'active'),
+(16, 16, 'active'), (17, 17, 'active'), (18, 18, 'active'), (19, 19, 'active'), (20, 20, 'active'),
+(21, 21, 'active'), (22, 22, 'active'), (23, 23, 'active'), (24, 24, 'active'), (25, 25, 'active'),
+(26, 26, 'active'), (27, 27, 'active'), (28, 28, 'active'), (29, 29, 'active'), (30, 30, 'active');

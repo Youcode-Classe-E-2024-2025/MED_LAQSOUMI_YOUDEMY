@@ -14,7 +14,7 @@ class UtilisateurController
     public function __construct($db)
     {
         $this->db = $db;
-        $this->user = new User($this->db);
+        $this->user = new Utilisateur($this->db);
     }
 
 
@@ -27,36 +27,14 @@ class UtilisateurController
             if (empty($this->email) || empty($this->password)) {
                 $error = "Both email and password are required.";
             } else {
-                $user = $this->user->login($this->email, $this->password);
+                $user = $this->user->connecter($this->email, $this->password);
                 if ($user) {
                     session_start();
-                    $userRole = $user['role'];
-                    switch ($userRole) {
-                        case 'etudiant':
-                            $_SESSION['name'] = $user['nom'];
-                            $_SESSION['role'] = $user['role'];
-                            $_SESSION['user_id'] = $user['id'];
-                            header('Location: index.php?action=home');
-                            exit;
-                            break;
-                        case 'enseignant':
-                            $_SESSION['name'] = $user['nom'];
-                            $_SESSION['role'] = $user['role'];
-                            $_SESSION['user_id'] = $user['id'];
-                            header('Location: index.php?action=home');
-                            exit;
-                            break;
-                        case 'administrateur':
-                            $_SESSION['name'] = $user['nom'];
-                            $_SESSION['role'] = $user['role'];
-                            $_SESSION['user_id'] = $user['id'];
-                            header('Location: index.php?action=home');
-                            exit;
-                            break;
-                        default:
-                            $error = "Invalid email or password.";
-                            break;
-                    }
+                    $_SESSION['name'] = $user['nom'];
+                    $_SESSION['role'] = $user['role'];
+                    $_SESSION['user_id'] = $user['id'];
+                    header('Location: index.php?action=home');
+                    exit;
                 } else {
                     $error = "Invalid email or password.";
                 }
@@ -68,6 +46,7 @@ class UtilisateurController
 
     public function logout()
     {
+        session_start();
         $_SESSION = array();
         if (ini_get("session.use_cookies")) {
             $params = session_get_cookie_params();
@@ -102,39 +81,17 @@ class UtilisateurController
             if (empty($nom) || empty($email) || empty($password) || empty($role) || empty($confirm_password)) {
                 $error = "All fields are required.";
             } else {
-                $userId = $this->user->register($nom, $email, $password, $role);
+                $userId = $this->user->sEnregistrer($nom, $email, $password, $role);
                 if ($userId) {
-                    $user = $this->user->login($email, $password);
+                    $user = $this->user->connecter($email, $password);
 
                     if ($user) {
                         session_start();
-                        $userRole = $user['role'];
-                        switch ($userRole) {
-                            case 'etudiant':
-                                $_SESSION['name'] = $user['nom'];
-                                $_SESSION['role'] = $user['role'];
-                                $_SESSION['user_id'] = $user['id'];
-                                header('Location: index.php?action=home');
-                                exit;
-                                break;
-                            case 'enseignant':
-                                $_SESSION['name'] = $user['nom'];
-                                $_SESSION['role'] = $user['role'];
-                                $_SESSION['user_id'] = $user['id'];
-                                header('Location: index.php?action=home');
-                                exit;
-                                break;
-                            case 'administrateur':
-                                $_SESSION['name'] = $user['nom'];
-                                $_SESSION['role'] = $user['role'];
-                                $_SESSION['user_id'] = $user['id'];
-                                header('Location: index.php?action=home');
-                                exit;
-                                break;
-                            default:
-                                $error = "Invalid email or password.";
-                                break;
-                        }
+                        $_SESSION['name'] = $user['nom'];
+                        $_SESSION['role'] = $user['role'];
+                        $_SESSION['user_id'] = $user['id'];
+                        header('Location: index.php?action=home');
+                        exit;
                     } else {
                         $error = "Invalid email or password.";
                     }

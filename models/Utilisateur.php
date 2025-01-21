@@ -1,91 +1,70 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
-class User {
-    private $db;
-    private $id;
-    private $role;
-    private $name;
-    private $email;
-    private $password;
 
-    public function __construct($db, $id = null, $role = null, $name = null, $email = null, $password = null) {
-        $this->db = $db->getConnection();
-        $this->id = $id;
-        $this->role = $role;
-        $this->name = $name;
-        $this->email = $email;
-        $this->password = $password;
+class Utilisateur {
+    protected $id;
+    protected $nom;
+    protected $email;
+    protected $motDePasse;
+    protected $role;
+    protected $db;
+
+    public function __construct() {
+        $this->db = DatabaseConnection::getInstance()->getConnection();
     }
 
-    public function hashPassword($password) {
-        $this->password = password_hash($password, PASSWORD_DEFAULT);
-        return $this->password;
-    }
+    public function connecter($email, $motDePasse) {
+        $stmt = $this->db->prepare("SELECT * FROM utilisateurs WHERE email = ?");
+        $stmt->execute([$email]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    public function checkPassword($password, $hashedPassword) {
-        $this->password = password_verify($password, $hashedPassword);
-        return $this->password;
-    }
-
-    public function register($nom, $email, $password, $role) {
-        try {
-            $query = "INSERT INTO utilisateurs (nom, email, mot_de_passe, role) VALUES (?, ?, ?, ?)";
-            $stmt = $this->db->prepare($query);
-            $stmt->execute([$nom, $email, $this->hashPassword($password), $role]);
-            return $this->db->lastInsertId();
-        } catch (PDOException $e) {
-            error_log('Registration error: ' . $e->getMessage());
-            return false;
+        if ($user && password_verify($motDePasse, $user['mot_de_passe'])) {
+            $_SESSION['user_id'] = $user['id'];
+            $_SESSION['role'] = $user['role'];
+            $_SESSION['name'] = $user['nom'];
+            return $user;
         }
+        return false;
     }
 
-    public function login($email, $password) {
-        try {
-            $this->email = $email;
-            $this->password = $password;
-            $query = "SELECT * FROM utilisateurs WHERE email = ?";
-            $stmt = $this->db->prepare($query);
-            $stmt->execute([$email]);
-            $user = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-            if ($user && $this->checkPassword($password, $user['mot_de_passe'])) {
-                $_SESSION['user_id'] = $this->id;
-                $_SESSION['role'] = $this->role;
-                $_SESSION['name'] = $this->name;
-                return $user; 
-            } else {
-                return false;
-            }
-        } catch (PDOException $e) {
-            error_log('Login error: ' . $e->getMessage());
-            return false;
-        }
+    public function deconnecter() {
+        session_destroy();
     }
 
-    public function getUserById($id) {
-        try {
-            $this->id = $id;
-            $query = "SELECT * FROM utilisateurs WHERE id = ?";
-            $stmt = $this->db->prepare($query);
-            $stmt->execute([$id]);
-            return $stmt->fetch(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            error_log('Get user by ID error: ' . $e->getMessage());
-            return false;
-        }
+    public function getRole() {
+        return $this->role;
     }
 
+    public function sEnregistrer($nom, $email, $motDePasse, $role) {
+        $hashedPassword = password_hash($motDePasse, PASSWORD_DEFAULT);
+        $stmt = $this->db->prepare("INSERT INTO utilisateurs (nom, email, mot_de_passe, role) VALUES (?, ?, ?, ?)");
+        $stmt->execute([$nom, $email, $hashedPassword, $role]);
+        return $this->db->lastInsertId();
+    }
 
-    public function getUserByRole($role) {
-        try {
-            $this->role = $role;
-            $query = "SELECT * FROM utilisateurs WHERE role = ?";
-            $stmt = $this->db->prepare($query);
-            $stmt->execute([$role]);
-            return $stmt->fetch(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            error_log('Get user by ID error: ' . $e->getMessage());
-            return false;
+    public function calculerStatistiquesUtilisateur($utilisateur) {
+        $stats = [];
+        if ($this->role === 'etudiant') {
+            $stmt = $this->db->prepare("SELECT COUNT(*) FROM inscriptions WHERE etudiant_id = ?");
+            $stmt->execute([$utilisateur]);
+            $stats['total_cours'] = $stmt->fetchColumn();
+        } elseif ($this->role === 'enseignant') {
+            $stmt = $this->db->prepare("SELECT COUNT(*) FROM cours WHERE enseignant_id = ?");
+            $stmt->execute([$utilisateur]);
+            $stats['total_cours_crees'] = $stmt->fetchColumn();
+
+            $stmt = $this->db->prepare("SELECT COUNT(DISTINCT i.etudiant_id) FROM inscriptions i JOIN cours c ON i.cours_id = c.id WHERE c.enseignant_id = ?");
+            $stmt->execute([$utilisateur]);
+            $stats['total_etudiants'] = $stmt->fetchColumn();
         }
+        return $stats;
+    }
+
+    public function calculerStatistiquesGlobales() {
+        $stats = [];
+        $stats['total_utilisateurs'] = $this->db->query("SELECT COUNT(*) FROM utilisateurs")->fetchColumn();
+        $stats['total_cours'] = $this->db->query("SELECT COUNT(*) FROM cours")->fetchColumn();
+        $stats['total_inscriptions'] = $this->db->query("SELECT COUNT(*) FROM inscriptions")->fetchColumn();
+        return $stats;
     }
 }

@@ -88,8 +88,8 @@ $titre = isset($_SESSION['titre']) ? $_SESSION['titre'] : '';
                             <div class="bg-gray-100 p-4 rounded-lg">
                                 <h4 class="font-semibold mb-2"><?= htmlspecialchars($item['titre']) ?></h4>
                                 <img src="<?= htmlspecialchars($item['image']) ?>" alt="Thumbnail" class="w-full h-48 object-cover mb-2">
-                                <p class="text-sm mb-2">Teacher: <?= htmlspecialchars($item['teacher_name']) ?></p>
-                                <p class="text-sm mb-2">Category: <?= htmlspecialchars($item['category_name']) ?></p>
+                                <p class="text-sm mb-2">Teacher: <?= htmlspecialchars($item['enseignant_nom']) ?></p>
+                                <p class="text-sm mb-2">Category: <?= htmlspecialchars($item['categorie_nom']) ?></p>
                                 <p class="text-sm mb-2">Description: <?= htmlspecialchars($item['description']) ?></p>
                                 <p class="text-sm mb-2">contenu: <?= htmlspecialchars($item['contenu']) ?></p>
                                 <a href="index.php?action=course&id=<?= htmlspecialchars($item['id']) ?>" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-secondary">View Course</a>
