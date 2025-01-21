@@ -2,7 +2,7 @@
 session_start();
 require_once __DIR__ . '/controllers/AuthController.php';
 require_once __DIR__ . '/controllers/AdminController.php';
-require_once __DIR__ . '/controllers/EnseignantController.php';
+require_once __DIR__ . '/controllers/TeacherController.php';
 require_once __DIR__ . '/controllers/EtudiantController.php';
 require_once __DIR__ . '/controllers/CourseController.php';
 
@@ -56,19 +56,19 @@ switch ($action) {
             header('Location: index.php?action=login');
             exit;
         }
-        $enseignantController = new EnseignantController();
+        $teacherController = new TeacherController();
         switch ($page) {
             case 'courses':
-                $enseignantController->gererCours();
+                $teacherController->gererCours();
                 break;
             case 'add-course':
-                $enseignantController->ajouterCours();
+                $teacherController->ajouterCours();
                 break;
             case 'edit-course':
-                $enseignantController->modifierCours();
+                $teacherController->modifierCours();
                 break;
             default:
-                $enseignantController->index();
+                $teacherController->index();
                 break;
         }
         break;

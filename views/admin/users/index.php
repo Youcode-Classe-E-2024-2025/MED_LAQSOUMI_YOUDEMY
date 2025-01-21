@@ -48,8 +48,8 @@
                                     <?php if ($user['role'] === 'enseignant' && !$user['validated']): ?>
                                         <span class="badge bg-warning">Pending Validation</span>
                                     <?php else: ?>
-                                        <span class="badge bg-<?= $user['active'] ? 'success' : 'danger' ?>">
-                                            <?= $user['active'] ? 'Active' : 'Inactive' ?>
+                                        <span class="badge bg-<?= isset($user['active']) && $user['active'] ? 'success' : 'danger' ?>">
+                                            <?= isset($user['active']) && $user['active'] ? 'Active' : 'Inactive' ?>
                                         </span>
                                     <?php endif; ?>
                                 </td>
@@ -62,7 +62,7 @@
                                             </a>
                                         <?php endif; ?>
                                         
-                                        <?php if ($user['active']): ?>
+                                        <?php if (isset($user['active']) && $user['active']): ?>
                                             <a href="index.php?action=admin&page=users&suspend=<?= $user['id'] ?>" 
                                                class="btn btn-sm btn-warning">
                                                 Suspend
@@ -89,12 +89,11 @@
                                                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                     </div>
                                                     <div class="modal-body">
-                                                        Are you sure you want to delete user <?= htmlspecialchars($user['nom']) ?>?
+                                                        Are you sure you want to delete the user "<?= htmlspecialchars($user['nom']) ?>"?
                                                     </div>
                                                     <div class="modal-footer">
                                                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                                        <a href="index.php?action=admin&page=users&delete=<?= $user['id'] ?>" 
-                                                           class="btn btn-danger">Delete</a>
+                                                        <a href="index.php?action=admin&page=users&delete=<?= $user['id'] ?>" class="btn btn-danger">Delete</a>
                                                     </div>
                                                 </div>
                                             </div>

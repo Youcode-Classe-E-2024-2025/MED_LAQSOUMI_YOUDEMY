@@ -23,26 +23,53 @@ class AdminController {
             exit;
         }
 
-        $utilisateurs = User::getAll();
-        require_once __DIR__ . '/../views/admin/users/index.php';
-    }
-
-    public function validerEnseignant() {
-        if (!$this->isAdmin()) {
-            header('Location: index.php?action=login');
-            exit;
-        }
-
-        $teacherId = $_GET['id'] ?? null;
-        if ($teacherId) {
+        // Handle user actions
+        if (isset($_GET['validate'])) {
             try {
-                User::validateTeacher($teacherId);
+                User::validateTeacher($_GET['validate']);
                 $_SESSION['success'] = "Teacher validated successfully.";
             } catch (Exception $e) {
                 $_SESSION['error'] = "Error validating teacher: " . $e->getMessage();
             }
+            header('Location: index.php?action=admin&page=users');
+            exit;
         }
-        header('Location: index.php?action=admin&page=users');
+
+        if (isset($_GET['activate'])) {
+            try {
+                User::activateUser($_GET['activate']);
+                $_SESSION['success'] = "User activated successfully.";
+            } catch (Exception $e) {
+                $_SESSION['error'] = "Error activating user: " . $e->getMessage();
+            }
+            header('Location: index.php?action=admin&page=users');
+            exit;
+        }
+
+        if (isset($_GET['suspend'])) {
+            try {
+                User::suspendUser($_GET['suspend']);
+                $_SESSION['success'] = "User suspended successfully.";
+            } catch (Exception $e) {
+                $_SESSION['error'] = "Error suspending user: " . $e->getMessage();
+            }
+            header('Location: index.php?action=admin&page=users');
+            exit;
+        }
+
+        if (isset($_GET['delete'])) {
+            try {
+                User::deleteUser($_GET['delete']);
+                $_SESSION['success'] = "User deleted successfully.";
+            } catch (Exception $e) {
+                $_SESSION['error'] = "Error deleting user: " . $e->getMessage();
+            }
+            header('Location: index.php?action=admin&page=users');
+            exit;
+        }
+
+        $utilisateurs = User::getAll();
+        require_once __DIR__ . '/../views/admin/users/index.php';
     }
 
     public function gererCategories() {

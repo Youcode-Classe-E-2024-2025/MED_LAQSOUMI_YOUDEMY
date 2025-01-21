@@ -7,34 +7,39 @@ class Statistics extends Model {
         try {
             $stats = [];
             
-            // Total users by role
-            $stmt = $db->query("SELECT role, COUNT(*) as count FROM utilisateurs GROUP BY role");
-            $stats['users'] = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
-
-            // Total courses and enrollments
+            // General statistics
             $stmt = $db->query("SELECT 
                 (SELECT COUNT(*) FROM cours) as total_courses,
-                (SELECT COUNT(*) FROM inscriptions) as total_enrollments,
-                (SELECT COUNT(*) FROM categories) as total_categories");
-            $stats['platform'] = $stmt->fetch(PDO::FETCH_ASSOC);
+                (SELECT COUNT(*) FROM utilisateurs WHERE role = 'etudiant') as total_students,
+                (SELECT COUNT(*) FROM utilisateurs WHERE role = 'enseignant') as total_teachers,
+                (SELECT COUNT(*) FROM inscriptions) as total_enrollments");
+            $stats['general'] = $stmt->fetch(PDO::FETCH_ASSOC);
 
             // Most popular courses
             $stmt = $db->query("SELECT c.*, u.nom as enseignant_nom, 
-                              COUNT(DISTINCT i.etudiant_id) as enrollment_count
+                              COUNT(DISTINCT i.etudiant_id) as student_count
                               FROM cours c
                               JOIN utilisateurs u ON c.enseignant_id = u.id
                               LEFT JOIN inscriptions i ON c.id = i.cours_id
                               GROUP BY c.id, c.titre, c.description, c.contenu, c.image, 
                                        c.categorie_id, c.enseignant_id, c.created_at, c.updated_at, u.nom
-                              ORDER BY enrollment_count DESC
-                              LIMIT 5");
-            $stats['popular_courses'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                              ORDER BY student_count DESC
+                              LIMIT 1");
+            $stats['most_popular_course'] = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            // Courses per category
+            $stmt = $db->query("SELECT cat.nom, COUNT(c.id) as count
+                              FROM categories cat
+                              LEFT JOIN cours c ON cat.id = c.categorie_id
+                              GROUP BY cat.id, cat.nom
+                              ORDER BY count DESC");
+            $stats['courses_per_category'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             // Top teachers
             $stmt = $db->query("SELECT u.nom, COUNT(DISTINCT c.id) as course_count,
                               COUNT(DISTINCT i.etudiant_id) as student_count
                               FROM utilisateurs u
-                              JOIN cours c ON u.id = c.enseignant_id
+                              LEFT JOIN cours c ON u.id = c.enseignant_id
                               LEFT JOIN inscriptions i ON c.id = i.cours_id
                               WHERE u.role = 'enseignant'
                               GROUP BY u.id, u.nom

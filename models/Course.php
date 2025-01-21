@@ -6,13 +6,14 @@ class Course extends Model {
 
     public static function create($data) {
         $db = self::getConnection();
-        $stmt = $db->prepare("INSERT INTO cours (titre, description, contenu, categorie_id, enseignant_id) VALUES (?, ?, ?, ?, ?)");
+        $stmt = $db->prepare("INSERT INTO cours (titre, description, contenu, image, categorie_id, enseignant_id) VALUES (?, ?, ?, ?, ?, ?)");
         $db->beginTransaction();
         try {
             $stmt->execute([
                 $data['titre'],
                 $data['description'],
                 $data['contenu'],
+                $data['image'] ?? null,
                 $data['categorie_id'],
                 $data['enseignant_id']
             ]);
@@ -36,16 +37,28 @@ class Course extends Model {
 
     public static function update($id, $data) {
         $db = self::getConnection();
-        $stmt = $db->prepare("UPDATE cours SET titre = ?, description = ?, contenu = ?, categorie_id = ? WHERE id = ?");
+        $updateFields = ["titre = ?", "description = ?", "contenu = ?", "categorie_id = ?"];
+        $params = [
+            $data['titre'],
+            $data['description'],
+            $data['contenu'],
+            $data['categorie_id']
+        ];
+
+        // Add image to update if provided
+        if (isset($data['image'])) {
+            $updateFields[] = "image = ?";
+            $params[] = $data['image'];
+        }
+
+        $params[] = $id;  // Add id for WHERE clause
+
+        $sql = "UPDATE cours SET " . implode(", ", $updateFields) . " WHERE id = ?";
+        $stmt = $db->prepare($sql);
+
         $db->beginTransaction();
         try {
-            $stmt->execute([
-                $data['titre'],
-                $data['description'],
-                $data['contenu'],
-                $data['categorie_id'],
-                $id
-            ]);
+            $stmt->execute($params);
 
             // Update tags
             if (isset($data['tags'])) {
@@ -71,10 +84,15 @@ class Course extends Model {
     public static function getByTeacher($teacherId) {
         $db = self::getConnection();
         $stmt = $db->prepare("SELECT c.*, cat.nom as categorie_nom,
-                             (SELECT COUNT(*) FROM inscriptions WHERE cours_id = c.id) as nombre_inscrits
+                             COUNT(DISTINCT i.etudiant_id) as student_count
                              FROM cours c 
-                             JOIN categories cat ON c.categorie_id = cat.id 
-                             WHERE c.enseignant_id = ?");
+                             LEFT JOIN categories cat ON c.categorie_id = cat.id 
+                             LEFT JOIN inscriptions i ON c.id = i.cours_id
+                             WHERE c.enseignant_id = ?
+                             GROUP BY c.id, c.titre, c.description, c.contenu, c.image, 
+                                      c.categorie_id, c.enseignant_id, c.created_at, c.updated_at,
+                                      cat.nom
+                             ORDER BY c.created_at DESC");
         $stmt->execute([$teacherId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -84,11 +102,15 @@ class Course extends Model {
         try {
             // Get course basic info
             $stmt = $db->prepare("SELECT c.*, cat.nom as categorie_nom, u.nom as enseignant_nom,
-                                (SELECT COUNT(*) FROM inscriptions WHERE cours_id = c.id) as nombre_inscrits
+                                COUNT(DISTINCT i.etudiant_id) as student_count
                                 FROM cours c 
-                                JOIN categories cat ON c.categorie_id = cat.id
-                                JOIN utilisateurs u ON c.enseignant_id = u.id
-                                WHERE c.id = ?");
+                                LEFT JOIN categories cat ON c.categorie_id = cat.id
+                                LEFT JOIN utilisateurs u ON c.enseignant_id = u.id
+                                LEFT JOIN inscriptions i ON c.id = i.cours_id
+                                WHERE c.id = ?
+                                GROUP BY c.id, c.titre, c.description, c.contenu, c.image, 
+                                         c.categorie_id, c.enseignant_id, c.created_at, c.updated_at,
+                                         cat.nom, u.nom");
             $stmt->execute([$id]);
             $course = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -103,128 +125,126 @@ class Course extends Model {
             $tagStmt->execute([$id]);
             $course['tags'] = $tagStmt->fetchAll(PDO::FETCH_ASSOC);
 
-            // Get course sections and lessons
-            $sectionStmt = $db->prepare("SELECT * FROM sections WHERE cours_id = ? ORDER BY ordre");
-            $sectionStmt->execute([$id]);
-            $course['sections'] = $sectionStmt->fetchAll(PDO::FETCH_ASSOC);
-
-            foreach ($course['sections'] as &$section) {
-                $lessonStmt = $db->prepare("SELECT * FROM lecons WHERE section_id = ? ORDER BY ordre");
-                $lessonStmt->execute([$section['id']]);
-                $section['lessons'] = $lessonStmt->fetchAll(PDO::FETCH_ASSOC);
-            }
-
-            // Get other courses by the same teacher
-            $otherCoursesStmt = $db->prepare("SELECT c.id, c.titre, cat.nom as categorie_nom,
-                                            (SELECT COUNT(*) FROM inscriptions WHERE cours_id = c.id) as nombre_inscrits
-                                            FROM cours c 
-                                            JOIN categories cat ON c.categorie_id = cat.id
-                                            WHERE c.enseignant_id = ? AND c.id != ?
-                                            LIMIT 5");
-            $otherCoursesStmt->execute([$course['enseignant_id'], $id]);
-            $course['autres_cours'] = $otherCoursesStmt->fetchAll(PDO::FETCH_ASSOC);
-
             return $course;
         } catch (Exception $e) {
-            throw new Exception("Failed to fetch course details: " . $e->getMessage());
+            throw new Exception("Error getting course details: " . $e->getMessage());
         }
     }
 
-    public static function search($filters = [], $page = 1, $perPage = 12) {
+    public static function search($query = '', $filters = [], $page = 1, $perPage = 12) {
         $db = self::getConnection();
-        try {
-            $conditions = [];
-            $params = [];
-            $query = "SELECT c.*, cat.nom as categorie_nom, u.nom as enseignant_nom,
-                     (SELECT COUNT(*) FROM inscriptions WHERE cours_id = c.id) as nombre_inscrits
-                     FROM cours c 
-                     JOIN categories cat ON c.categorie_id = cat.id
-                     JOIN utilisateurs u ON c.enseignant_id = u.id";
-
-            if (!empty($filters['search'])) {
-                $conditions[] = "(c.titre LIKE ? OR c.description LIKE ?)";
-                $searchTerm = "%{$filters['search']}%";
-                $params[] = $searchTerm;
-                $params[] = $searchTerm;
-            }
-
-            if (!empty($filters['category'])) {
-                $conditions[] = "c.categorie_id = ?";
-                $params[] = $filters['category'];
-            }
-
-            if (!empty($conditions)) {
-                $query .= " WHERE " . implode(" AND ", $conditions);
-            }
-
-            if (!empty($filters['sort'])) {
-                switch ($filters['sort']) {
-                    case 'popular':
-                        $query .= " ORDER BY nombre_inscrits DESC";
-                        break;
-                    case 'recent':
-                    default:
-                        $query .= " ORDER BY c.created_at DESC";
-                        break;
-                }
-            }
-
-            // Add pagination
-            $offset = ($page - 1) * $perPage;
-            $query .= " LIMIT ? OFFSET ?";
-            $params[] = (int)$perPage;
-            $params[] = (int)$offset;
-
-            $stmt = $db->prepare($query);
-            $stmt->execute($params);
-            $courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-            // Get tags for each course
-            foreach ($courses as &$course) {
-                $tagStmt = $db->prepare("SELECT t.* FROM tags t 
-                                       JOIN cours_tags ct ON t.id = ct.tag_id 
-                                       WHERE ct.cours_id = ?");
-                $tagStmt->execute([$course['id']]);
-                $course['tags'] = $tagStmt->fetchAll(PDO::FETCH_ASSOC);
-            }
-
-            return $courses;
-        } catch (Exception $e) {
-            throw new Exception("Failed to fetch courses: " . $e->getMessage());
+        
+        $conditions = [];
+        $params = [];
+        
+        if (!empty($query)) {
+            $conditions[] = "(c.titre LIKE ? OR c.description LIKE ?)";
+            $params[] = "%$query%";
+            $params[] = "%$query%";
         }
+        
+        if (!empty($filters['category'])) {
+            $conditions[] = "c.categorie_id = ?";
+            $params[] = $filters['category'];
+        }
+        
+        if (!empty($filters['tags'])) {
+            $tagIds = implode(',', array_map('intval', $filters['tags']));
+            $conditions[] = "EXISTS (SELECT 1 FROM cours_tags ct WHERE ct.cours_id = c.id AND ct.tag_id IN ($tagIds))";
+        }
+        
+        $where = !empty($conditions) ? "WHERE " . implode(" AND ", $conditions) : "";
+        
+        // Get total count
+        $countSql = "SELECT COUNT(DISTINCT c.id) as count 
+                     FROM cours c 
+                     LEFT JOIN cours_tags ct ON c.id = ct.cours_id 
+                     $where";
+        $stmt = $db->prepare($countSql);
+        $stmt->execute($params);
+        $total = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
+        
+        // Get paginated results
+        $offset = ($page - 1) * $perPage;
+        $sql = "SELECT c.*, cat.nom as categorie_nom, u.nom as enseignant_nom,
+                COUNT(DISTINCT i.etudiant_id) as student_count
+                FROM cours c 
+                LEFT JOIN categories cat ON c.categorie_id = cat.id
+                LEFT JOIN utilisateurs u ON c.enseignant_id = u.id
+                LEFT JOIN inscriptions i ON c.id = i.cours_id
+                $where
+                GROUP BY c.id, c.titre, c.description, c.contenu, c.image, 
+                         c.categorie_id, c.enseignant_id, c.created_at, c.updated_at,
+                         cat.nom, u.nom
+                ORDER BY c.created_at DESC
+                LIMIT ? OFFSET ?";
+        
+        $params[] = $perPage;
+        $params[] = $offset;
+        
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
+        $courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        return [
+            'courses' => $courses,
+            'total' => $total,
+            'pages' => ceil($total / $perPage),
+            'current_page' => $page
+        ];
     }
 
     public static function myEnrollments($studentId, $page = 1, $perPage = 12) {
         $db = self::getConnection();
+        
+        // Get total count
+        $countStmt = $db->prepare("SELECT COUNT(*) as count FROM inscriptions WHERE etudiant_id = ?");
+        $countStmt->execute([$studentId]);
+        $total = $countStmt->fetch(PDO::FETCH_ASSOC)['count'];
+        
+        // Get paginated results
+        $offset = ($page - 1) * $perPage;
+        $stmt = $db->prepare("SELECT c.*, cat.nom as categorie_nom, u.nom as enseignant_nom,
+                             i.progress, i.completed, i.date_inscription
+                             FROM inscriptions i
+                             JOIN cours c ON i.cours_id = c.id
+                             LEFT JOIN categories cat ON c.categorie_id = cat.id
+                             LEFT JOIN utilisateurs u ON c.enseignant_id = u.id
+                             WHERE i.etudiant_id = ?
+                             ORDER BY i.date_inscription DESC
+                             LIMIT ? OFFSET ?");
+        $stmt->execute([$studentId, $perPage, $offset]);
+        $courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        return [
+            'courses' => $courses,
+            'total' => $total,
+            'pages' => ceil($total / $perPage),
+            'current_page' => $page
+        ];
+    }
+
+    public static function delete($id) {
+        $db = self::getConnection();
+        $db->beginTransaction();
         try {
-            $query = "SELECT c.*, cat.nom as categorie_nom, u.nom as enseignant_nom,
-                     i.completed, i.progress, i.date_inscription,
-                     (SELECT COUNT(*) FROM inscriptions WHERE cours_id = c.id) as nombre_inscrits
-                     FROM inscriptions i
-                     JOIN cours c ON i.cours_id = c.id
-                     JOIN categories cat ON c.categorie_id = cat.id
-                     JOIN utilisateurs u ON c.enseignant_id = u.id
-                     WHERE i.etudiant_id = ?
-                     ORDER BY i.date_inscription DESC
-                     LIMIT ? OFFSET ?";
+            // Delete course tags
+            $stmt = $db->prepare("DELETE FROM cours_tags WHERE cours_id = ?");
+            $stmt->execute([$id]);
 
-            $offset = ($page - 1) * $perPage;
-            $stmt = $db->prepare($query);
-            $stmt->execute([$studentId, (int)$perPage, (int)$offset]);
-            $courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            // Delete course enrollments
+            $stmt = $db->prepare("DELETE FROM inscriptions WHERE cours_id = ?");
+            $stmt->execute([$id]);
 
-            // Get tags for each course
-            foreach ($courses as &$course) {
-                $tagStmt = $db->prepare("SELECT t.* FROM tags t 
-                                       JOIN cours_tags ct ON t.id = ct.tag_id 
-                                       WHERE ct.cours_id = ?");
-                $tagStmt->execute([$course['id']]);
-                $course['tags'] = $tagStmt->fetchAll(PDO::FETCH_ASSOC);
-            }
+            // Delete course
+            $stmt = $db->prepare("DELETE FROM cours WHERE id = ?");
+            $stmt->execute([$id]);
 
-            return $courses;
+            $db->commit();
+            return true;
         } catch (Exception $e) {
-            throw new Exception("Failed to fetch enrolled courses: " . $e->getMessage());
+            $db->rollBack();
+            throw $e;
         }
     }
 }
