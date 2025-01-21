@@ -53,6 +53,52 @@ class Statistics extends Model {
         }
     }
 
+    public static function getDashboardStats() {
+        $db = self::getConnection();
+        try {
+            $stats = [];
+            
+            // Total users by role
+            $stmt = $db->query("SELECT role, COUNT(*) as count 
+                               FROM utilisateurs 
+                               GROUP BY role");
+            $stats['users'] = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
+
+            // Total courses
+            $stmt = $db->query("SELECT COUNT(*) FROM cours");
+            $stats['total_courses'] = $stmt->fetchColumn();
+
+            // Total categories
+            $stmt = $db->query("SELECT COUNT(*) FROM categories");
+            $stats['total_categories'] = $stmt->fetchColumn();
+
+            // Total enrollments
+            $stmt = $db->query("SELECT COUNT(*) FROM inscriptions");
+            $stats['total_enrollments'] = $stmt->fetchColumn();
+
+            // Recent courses
+            $stmt = $db->query("SELECT c.*, u.nom as teacher_name, cat.nom as category_name
+                               FROM cours c
+                               JOIN utilisateurs u ON c.enseignant_id = u.id
+                               JOIN categories cat ON c.categorie_id = cat.id
+                               ORDER BY c.created_at DESC
+                               LIMIT 5");
+            $stats['recent_courses'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Recent users
+            $stmt = $db->query("SELECT id, nom, email, role, created_at
+                               FROM utilisateurs
+                               ORDER BY created_at DESC
+                               LIMIT 5");
+            $stats['recent_users'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            return $stats;
+        } catch (PDOException $e) {
+            error_log("Error getting dashboard stats: " . $e->getMessage());
+            return null;
+        }
+    }
+
     public static function getTeacherStats($teacherId) {
         $db = self::getConnection();
         try {

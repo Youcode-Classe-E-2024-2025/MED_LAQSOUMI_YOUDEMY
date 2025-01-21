@@ -1,220 +1,117 @@
 <?php
 
-require_once __DIR__ . '/../models/User.php';
-require_once __DIR__ . '/../models/Course.php';
+require_once __DIR__ . '/../models/Administrateur.php';
 require_once __DIR__ . '/../models/Category.php';
-require_once __DIR__ . '/../models/Tag.php';
+require_once __DIR__ . '/../models/Course.php';
 require_once __DIR__ . '/../models/Statistics.php';
 
 class AdminController {
+    private function isAdmin() {
+        return isset($_SESSION['user']) && $_SESSION['user']['role'] === 'admin';
+    }
+
     public function index() {
         if (!$this->isAdmin()) {
             header('Location: index.php?action=login');
             exit;
         }
 
-        $stats = Statistics::getGlobalStats();
+        $page = 'dashboard';
+        $stats = Statistics::getDashboardStats();
         require_once __DIR__ . '/../views/admin/dashboard.php';
     }
 
-    public function gererUtilisateurs() {
+    public function users() {
         if (!$this->isAdmin()) {
             header('Location: index.php?action=login');
             exit;
         }
 
-        // Handle user actions
-        if (isset($_GET['validate'])) {
-            try {
-                User::validateTeacher($_GET['validate']);
-                $_SESSION['success'] = "Teacher validated successfully.";
-            } catch (Exception $e) {
-                $_SESSION['error'] = "Error validating teacher: " . $e->getMessage();
-            }
-            header('Location: index.php?action=admin&page=users');
-            exit;
-        }
-
-        if (isset($_GET['activate'])) {
-            try {
-                User::activateUser($_GET['activate']);
-                $_SESSION['success'] = "User activated successfully.";
-            } catch (Exception $e) {
-                $_SESSION['error'] = "Error activating user: " . $e->getMessage();
-            }
-            header('Location: index.php?action=admin&page=users');
-            exit;
-        }
-
-        if (isset($_GET['suspend'])) {
-            try {
-                User::suspendUser($_GET['suspend']);
-                $_SESSION['success'] = "User suspended successfully.";
-            } catch (Exception $e) {
-                $_SESSION['error'] = "Error suspending user: " . $e->getMessage();
-            }
-            header('Location: index.php?action=admin&page=users');
-            exit;
-        }
-
-        if (isset($_GET['delete'])) {
-            try {
-                User::deleteUser($_GET['delete']);
-                $_SESSION['success'] = "User deleted successfully.";
-            } catch (Exception $e) {
-                $_SESSION['error'] = "Error deleting user: " . $e->getMessage();
-            }
-            header('Location: index.php?action=admin&page=users');
-            exit;
-        }
-
-        $utilisateurs = User::getAll();
+        $page = 'users';
+        $users = Administrateur::getAllUsers();
         require_once __DIR__ . '/../views/admin/users/index.php';
     }
 
-    public function gererCategories() {
+    public function deleteUser() {
         if (!$this->isAdmin()) {
             header('Location: index.php?action=login');
             exit;
         }
 
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            try {
-                Category::create(['nom' => $_POST['nom']]);
-                $_SESSION['success'] = "Category created successfully.";
-            } catch (Exception $e) {
-                $_SESSION['error'] = "Error creating category: " . $e->getMessage();
+        if (isset($_POST['id'])) {
+            if (Administrateur::deleteUser($_POST['id'])) {
+                $_SESSION['success'] = "User deleted successfully.";
+            } else {
+                $_SESSION['error'] = "Failed to delete user.";
             }
         }
 
-        $categories = Category::getWithCourseCount();
+        header('Location: index.php?action=admin&page=users');
+        exit;
+    }
+
+    public function categories() {
+        if (!$this->isAdmin()) {
+            header('Location: index.php?action=login');
+            exit;
+        }
+
+        $page = 'categories';
+        $categories = Category::getAll();
         require_once __DIR__ . '/../views/admin/categories/index.php';
     }
 
-    public function supprimerCategorie() {
+    public function addCategory() {
         if (!$this->isAdmin()) {
             header('Location: index.php?action=login');
             exit;
         }
 
-        $categoryId = $_GET['id'] ?? null;
-        if ($categoryId) {
-            try {
-                if (Category::canDelete($categoryId)) {
-                    Category::delete($categoryId);
-                    $_SESSION['success'] = "Category deleted successfully.";
-                } else {
-                    $_SESSION['error'] = "Cannot delete category: it has associated courses.";
-                }
-            } catch (Exception $e) {
-                $_SESSION['error'] = "Error deleting category: " . $e->getMessage();
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['nom'])) {
+            if (Category::create(['nom' => $_POST['nom']])) {
+                $_SESSION['success'] = "Category added successfully.";
+            } else {
+                $_SESSION['error'] = "Failed to add category.";
             }
         }
+
         header('Location: index.php?action=admin&page=categories');
+        exit;
     }
 
-    public function gererTags() {
+    public function deleteCategory() {
         if (!$this->isAdmin()) {
             header('Location: index.php?action=login');
             exit;
         }
 
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            try {
-                if (isset($_POST['tags'])) {
-                    // Bulk insert
-                    $tags = array_map('trim', explode(',', $_POST['tags']));
-                    Tag::bulkCreate($tags);
-                    $_SESSION['success'] = "Tags created successfully.";
-                } elseif (isset($_POST['nom'])) {
-                    // Single tag insert
-                    Tag::create(['nom' => $_POST['nom']]);
-                    $_SESSION['success'] = "Tag created successfully.";
-                }
-            } catch (Exception $e) {
-                $_SESSION['error'] = "Error creating tag(s): " . $e->getMessage();
+        if (isset($_POST['id'])) {
+            if (Category::delete($_POST['id'])) {
+                $_SESSION['success'] = "Category deleted successfully.";
+            } else {
+                $_SESSION['error'] = "Failed to delete category.";
             }
-            header('Location: index.php?action=admin&page=tags');
-            exit;
         }
 
-        // Handle tag deletion
-        if (isset($_GET['delete'])) {
-            try {
-                $tagId = (int)$_GET['delete'];
-                if (Tag::canDelete($tagId)) {
-                    Tag::delete($tagId);
-                    $_SESSION['success'] = "Tag deleted successfully.";
-                } else {
-                    $_SESSION['error'] = "Cannot delete tag: it is used by one or more courses.";
-                }
-            } catch (Exception $e) {
-                $_SESSION['error'] = "Error deleting tag: " . $e->getMessage();
-            }
-            header('Location: index.php?action=admin&page=tags');
-            exit;
-        }
-
-        $tags = Tag::getWithCourseCount();
-        require_once __DIR__ . '/../views/admin/tags/index.php';
+        header('Location: index.php?action=admin&page=categories');
+        exit;
     }
 
-    public function gererCours() {
+    public function editCategory() {
         if (!$this->isAdmin()) {
             header('Location: index.php?action=login');
             exit;
         }
 
-        // Handle course actions
-        if (isset($_GET['publish'])) {
-            try {
-                Course::publish($_GET['publish']);
-                $_SESSION['success'] = "Course published successfully.";
-            } catch (Exception $e) {
-                $_SESSION['error'] = "Error publishing course: " . $e->getMessage();
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id']) && !empty($_POST['nom'])) {
+            if (Category::update($_POST['id'], ['nom' => $_POST['nom']])) {
+                $_SESSION['success'] = "Category updated successfully.";
+            } else {
+                $_SESSION['error'] = "Failed to update category.";
             }
-            header('Location: index.php?action=admin&page=courses');
-            exit;
         }
 
-        if (isset($_GET['unpublish'])) {
-            try {
-                Course::unpublish($_GET['unpublish']);
-                $_SESSION['success'] = "Course unpublished successfully.";
-            } catch (Exception $e) {
-                $_SESSION['error'] = "Error unpublishing course: " . $e->getMessage();
-            }
-            header('Location: index.php?action=admin&page=courses');
-            exit;
-        }
-
-        if (isset($_GET['delete'])) {
-            try {
-                Course::delete($_GET['delete']);
-                $_SESSION['success'] = "Course deleted successfully.";
-            } catch (Exception $e) {
-                $_SESSION['error'] = "Error deleting course: " . $e->getMessage();
-            }
-            header('Location: index.php?action=admin&page=courses');
-            exit;
-        }
-
-        if (isset($_GET['view'])) {
-            $course = Course::getWithDetails($_GET['view']);
-            if ($course) {
-                require_once __DIR__ . '/../views/admin/courses/view.php';
-                return;
-            }
-            $_SESSION['error'] = "Course not found.";
-            header('Location: index.php?action=admin&page=courses');
-            exit;
-        }
-
-        $courses = Course::getAllWithDetails();
-        require_once __DIR__ . '/../views/admin/courses/index.php';
-    }
-
-    private function isAdmin() {
-        return isset($_SESSION['user']) && $_SESSION['user']['role'] === 'admin';
+        header('Location: index.php?action=admin&page=categories');
+        exit;
     }
 }

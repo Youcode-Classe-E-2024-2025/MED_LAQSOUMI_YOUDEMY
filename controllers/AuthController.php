@@ -2,6 +2,10 @@
 require_once __DIR__ . '/../models/User.php';
 
 class AuthController {
+    public function showLoginForm() {
+        require_once __DIR__ . '/../views/auth/login.php';
+    }
+
     public function login() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
@@ -31,12 +35,16 @@ class AuthController {
                     exit;
                 } else {
                     $_SESSION['error'] = "Invalid email or password.";
+                    header('Location: index.php?action=login');
+                    exit;
                 }
             } catch (Exception $e) {
                 $_SESSION['error'] = "Login error: " . $e->getMessage();
+                header('Location: index.php?action=login');
+                exit;
             }
         }
-        require_once __DIR__ . '/../views/auth/login.php';
+        $this->showLoginForm();
     }
 
     public function register() {

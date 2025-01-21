@@ -21,69 +21,43 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <?php if (isset($_SESSION['user'])): ?>
-                    <?php if ($_SESSION['user']['role'] === 'admin'): ?>
-                        <ul class="navbar-nav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.php">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.php?action=home&page=courses">Courses</a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <?php if (isset($_SESSION['user'])): ?>
+                        <?php if ($_SESSION['user']['role'] === 'etudiant'): ?>
                             <li class="nav-item">
-                                <a class="nav-link" href="index.php?action=admin">Dashboard</a>
+                                <a class="nav-link" href="index.php?action=etudiant">My Dashboard</a>
                             </li>
+                        <?php elseif ($_SESSION['user']['role'] === 'enseignant'): ?>
                             <li class="nav-item">
-                                <a class="nav-link" href="index.php?action=admin&page=users">Users</a>
+                                <a class="nav-link" href="index.php?action=enseignant">Teacher Dashboard</a>
                             </li>
+                        <?php elseif ($_SESSION['user']['role'] === 'admin'): ?>
                             <li class="nav-item">
-                                <a class="nav-link" href="index.php?action=admin&page=categories">Categories</a>
+                                <a class="nav-link" href="index.php?action=admin">Admin Panel</a>
                             </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="index.php?action=admin&page=tags">Tags</a>
-                            </li>
-                        </ul>
-                    <?php elseif ($_SESSION['user']['role'] === 'enseignant'): ?>
-                        <ul class="navbar-nav">
-                            <li class="nav-item">
-                                <a class="nav-link" href="index.php?action=enseignant">Dashboard</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="index.php?action=enseignant&page=courses">My Courses</a>
-                            </li>
-                        </ul>
-                    <?php elseif ($_SESSION['user']['role'] === 'etudiant'): ?>
-                        <ul class="navbar-nav">
-                            <li class="nav-item">
-                                <a class="nav-link" href="index.php?action=etudiant">Dashboard</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="index.php?action=etudiant&page=courses">Browse Courses</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="index.php?action=etudiant&page=enrolled">My Courses</a>
-                            </li>
-                        </ul>
-                    <?php endif; ?>
-                    <ul class="navbar-nav ms-auto">
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" 
-                               data-bs-toggle="dropdown">
-                                <i class="fas fa-user"></i> <?= htmlspecialchars($_SESSION['user']['nom']) ?>
+                        <?php endif; ?>
+                        <li class="nav-item">
+                            <a class="nav-link" href="index.php?action=logout">
+                                <i class="fas fa-sign-out-alt"></i> Logout
                             </a>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li>
-                                    <a class="dropdown-item" href="index.php?action=logout">
-                                        <i class="fas fa-sign-out-alt"></i> Logout
-                                    </a>
-                                </li>
-                            </ul>
                         </li>
-                    </ul>
-                <?php else: ?>
-                    <ul class="navbar-nav ms-auto">
+                    <?php else: ?>
                         <li class="nav-item">
                             <a class="nav-link" href="index.php?action=login">Login</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="index.php?action=register">Register</a>
                         </li>
-                    </ul>
-                <?php endif; ?>
+                    <?php endif; ?>
+                </ul>
             </div>
         </div>
     </nav>

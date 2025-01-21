@@ -1,164 +1,192 @@
 <?php
 session_start();
 
-require_once __DIR__ . '/controllers/HomeController.php';
-require_once __DIR__ . '/controllers/AuthController.php';
-require_once __DIR__ . '/controllers/AdminController.php';
-require_once __DIR__ . '/controllers/EtudiantController.php';
-require_once __DIR__ . '/controllers/EnseignantController.php';
-require_once __DIR__ . '/controllers/CourseController.php';
-
-$homeController = new HomeController();
-$authController = new AuthController();
-$adminController = new AdminController();
-$etudiantController = new EtudiantController();
-$enseignantController = new EnseignantController();
-$courseController = new CourseController();
+require_once 'controllers/HomeController.php';
+require_once 'controllers/AuthController.php';
+require_once 'controllers/AdminController.php';
+require_once 'controllers/EtudiantController.php';
+require_once 'controllers/EnseignantController.php';
+require_once 'controllers/CourseController.php';
 
 $action = $_GET['action'] ?? 'home';
-$page = $_GET['page'] ?? 'index';
+$page = $_GET['page'] ?? '';
 
-switch ($action) {
-    case 'home':
-        if ($page === 'course' && isset($_GET['id'])) {
-            $homeController->viewCourse($_GET['id']);
-        } else {
-            $homeController->index();
-        }
-        break;
+try {
+    switch ($action) {
+        case 'home':
+            $controller = new HomeController();
+            $controller->index();
+            break;
 
-    case 'register':
-        $homeController->register();
-        break;
+        case 'login':
+            $controller = new AuthController();
+            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                $controller->login();
+            } else {
+                $controller->showLoginForm();
+            }
+            break;
 
-    case 'login':
-        $authController->login();
-        break;
+        case 'register':
+            $controller = new AuthController();
+            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                $controller->register();
+            } else {
+                $controller->showRegistrationForm();
+            }
+            break;
 
-    case 'logout':
-        $authController->logout();
-        break;
+        case 'logout':
+            $controller = new AuthController();
+            $controller->logout();
+            break;
 
-    case 'admin':
-        if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
-            header('Location: index.php?action=login');
-            exit;
-        }
+        case 'admin':
+            $controller = new AdminController();
+            switch ($page) {
+                case 'users':
+                    $controller->users();
+                    break;
+                case 'delete-user':
+                    $controller->deleteUser();
+                    break;
+                case 'categories':
+                    $controller->categories();
+                    break;
+                case 'add-category':
+                    $controller->addCategory();
+                    break;
+                case 'edit-category':
+                    $controller->editCategory();
+                    break;
+                case 'delete-category':
+                    $controller->deleteCategory();
+                    break;
+                default:
+                    $controller->index();
+                    break;
+            }
+            break;
 
-        switch ($page) {
-            case 'categories':
-                $adminController->gererCategories();
-                break;
-            case 'tags':
-                $adminController->gererTags();
-                break;
-            case 'courses':
-                $adminController->gererCours();
-                break;
-            default:
-                $adminController->index();
-                break;
-        }
-        break;
+        case 'etudiant':
+            $controller = new EtudiantController();
+            switch ($page) {
+                case 'courses':
+                    $controller->courses();
+                    break;
+                case 'my-courses':
+                    $controller->myCourses();
+                    break;
+                case 'course':
+                    $id = $_GET['id'] ?? null;
+                    if ($id) {
+                        $controller->viewCourse($id);
+                    } else {
+                        throw new Exception("Course ID is required");
+                    }
+                    break;
+                case 'enroll':
+                    $controller->enroll();
+                    break;
+                case 'complete-course':
+                    $controller->completeCourse();
+                    break;
+                default:
+                    $controller->index();
+                    break;
+            }
+            break;
 
-    case 'etudiant':
-        if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'etudiant') {
-            header('Location: index.php?action=login');
-            exit;
-        }
+        case 'enseignant':
+            $controller = new EnseignantController();
+            switch ($page) {
+                case 'courses':
+                    $controller->courses();
+                    break;
+                case 'add-course':
+                    $controller->addCourse();
+                    break;
+                case 'edit-course':
+                    $id = $_GET['id'] ?? null;
+                    if ($id) {
+                        $controller->editCourse($id);
+                    } else {
+                        throw new Exception("Course ID is required");
+                    }
+                    break;
+                case 'delete-course':
+                    $controller->deleteCourse();
+                    break;
+                default:
+                    $controller->index();
+                    break;
+            }
+            break;
 
-        switch ($page) {
-            case 'courses':
-                $etudiantController->courses();
-                break;
-            case 'course':
-                if (isset($_GET['id'])) {
-                    $etudiantController->viewCourse($_GET['id']);
-                } else {
-                    header('Location: index.php?action=etudiant&page=courses');
-                }
-                break;
-            case 'enroll':
-                $etudiantController->enroll();
-                break;
-            case 'my-courses':
-                $etudiantController->myCourses();
-                break;
-            default:
-                $etudiantController->index();
-                break;
-        }
-        break;
+        case 'visitor':
+            $controller = new CourseController();
+            switch ($page) {
+                case 'courses':
+                    $controller->getAll();
+                    break;
+                case 'course':
+                    $id = $_GET['id'] ?? null;
+                    if ($id) {
+                        $controller->view($id);
+                    } else {
+                        throw new Exception("Course ID is required");
+                    }
+                    break;
+                default:
+                    require_once __DIR__ . '/views/home.php';
+                    break;
+            }
+            break;
 
-    case 'enseignant':
-        if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'enseignant') {
-            header('Location: index.php?action=login');
-            exit;
-        }
+        case 'student':
+            $controller = new CourseController();
+            switch ($page) {
+                case 'courses':
+                    $controller->getAll();
+                    break;
+                case 'course':
+                    $id = $_GET['id'] ?? null;
+                    if ($id) {
+                        $controller->view($id);
+                    } else {
+                        throw new Exception("Course ID is required");
+                    }
+                    break;
+                case 'enroll':
+                    $courseId = $_GET['course'] ?? null;
+                    if ($courseId) {
+                        $controller->enroll($courseId);
+                    } else {
+                        throw new Exception("Course ID is required");
+                    }
+                    break;
+                case 'enrolled':
+                    $controller->myEnrollments();
+                    break;
+                case 'complete':
+                    $courseId = $_GET['course'] ?? null;
+                    if ($courseId) {
+                        $controller->markCompleted($courseId);
+                    } else {
+                        throw new Exception("Course ID is required");
+                    }
+                    break;
+                default:
+                    require_once __DIR__ . '/views/home.php';
+                    break;
+            }
+            break;
 
-        switch ($page) {
-            case 'courses':
-                $enseignantController->courses();
-                break;
-            case 'course':
-                if (isset($_GET['id'])) {
-                    $enseignantController->editCourse($_GET['id']);
-                } else {
-                    $enseignantController->createCourse();
-                }
-                break;
-            default:
-                $enseignantController->index();
-                break;
-        }
-        break;
-
-    case 'visitor':
-        switch ($page) {
-            case 'courses':
-                $courseController->getAll();
-                break;
-            case 'course':
-                $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-                $courseController->view($id);
-                break;
-            default:
-                require_once __DIR__ . '/views/home.php';
-                break;
-        }
-        break;
-
-    case 'student':
-        if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'etudiant') {
-            header('Location: index.php?action=login');
-            exit;
-        }
-        switch ($page) {
-            case 'courses':
-                $courseController->getAll();
-                break;
-            case 'course':
-                $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-                $courseController->view($id);
-                break;
-            case 'enroll':
-                $courseId = isset($_GET['course']) ? (int)$_GET['course'] : 0;
-                $courseController->enroll($courseId);
-                break;
-            case 'enrolled':
-                $courseController->myEnrollments();
-                break;
-            case 'complete':
-                $courseId = isset($_GET['course']) ? (int)$_GET['course'] : 0;
-                $courseController->markCompleted($courseId);
-                break;
-            default:
-                require_once __DIR__ . '/views/home.php';
-                break;
-        }
-        break;
-
-    default:
-        header('Location: index.php');
-        break;
+        default:
+            throw new Exception("Page not found");
+    }
+} catch (Exception $e) {
+    $_SESSION['error'] = $e->getMessage();
+    header('Location: index.php');
+    exit;
 }
