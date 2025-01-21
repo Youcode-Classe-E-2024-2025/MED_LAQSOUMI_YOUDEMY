@@ -140,7 +140,7 @@ $data = isset($courses) ? $courses : (isset($results) ? $results : []);
         <!-- Course Cards Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
             <?php foreach ($data as $item) : ?>
-                <div class="bg-white rounded-lg overflow-hidden shadow-lg cursor-pointer" onclick="openModal(<?= htmlspecialchars(json_encode($item)) ?>)">
+                <div class="bg-white rounded-lg overflow-hidden shadow-lg cursor-pointer" onclick="openModal(<?= htmlspecialchars(json_encode(['id' => $item['id'], 'titre' => $item['titre'], 'description' => $item['description'], 'image' => $item['image'], 'teacher_name' => $item['teacher_name'], 'category_name' => $item['category_name'], 'contenu' => $item['contenu']])) ?>)">
                     <img src="<?= htmlspecialchars($item['image']) ?>" alt="Thumbnail" class="w-full h-48 object-cover">
                     <div class="p-6">
                         <h3 class="text-xl font-bold mb-2"><?= htmlspecialchars($item['titre']) ?></h3>
@@ -251,9 +251,11 @@ $data = isset($courses) ? $courses : (isset($results) ? $results : []);
                     </div>
                 </div>
                 <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                    <button type="button" onclick="enrollInCourse(course.id, <?= $user_id ?>)" id="enrollButton" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary text-base font-medium text-white hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:ml-3 sm:w-auto sm:text-sm">
-                        Enroll
-                    </button>
+                    <?php if ($role === 'etudiant'): ?>
+                        <button type="button" id="enrollButton" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary text-base font-medium text-white hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:ml-3 sm:w-auto sm:text-sm">
+                            Enroll
+                        </button>
+                    <?php endif; ?>
                     <button type="button" onclick="closeModal()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
                         Close
                     </button>
@@ -265,43 +267,109 @@ $data = isset($courses) ? $courses : (isset($results) ? $results : []);
     <script>
         // Assume userRole is set dynamically, e.g., 'etudiant', 'guest', etc.
         const userRole = '<?= $role ?>'; // Dynamically get the role from the backend.
+        let currentCourse = null;
 
         function openModal(course) {
             if (userRole !== 'etudiant') {
-                console.warn('Only users with the "etudiant" role can access this feature.');
-                return; // Exit the function if the user is not an 'etudiant'.
+                alert('Please login as a student to enroll in courses.');
+                return;
             }
 
+            currentCourse = course;
             document.getElementById('modal-title').textContent = course.titre;
             document.getElementById('modal-image').src = course.image;
             document.getElementById('modal-description').textContent = course.description;
             document.getElementById('modal-teacher').textContent = 'Teacher: ' + course.teacher_name;
             document.getElementById('modal-category').textContent = 'Category: ' + course.category_name;
-            document.getElementById('modal-content').textContent = 'Content: ' + course.contenu;
+            document.getElementById('modal-content').textContent = course.contenu;
 
             const enrollButton = document.getElementById('enrollButton');
-            enrollButton.onclick = function() {
-                enrollInCourse(course.id, <?= $user_id ?>);
-            };
+            if (enrollButton) {
+                enrollButton.onclick = () => enrollInCourse(course.id, <?= $user_id ?>);
+            }
 
             document.getElementById('courseModal').classList.remove('hidden');
         }
 
         function closeModal() {
+            currentCourse = null;
             document.getElementById('courseModal').classList.add('hidden');
         }
 
         function enrollInCourse(cours_id, user_id) {
-            console.log('Enrolling in course:', cours_id, 'for user:', user_id);
-            fetch('index.php?action=inscrireCours&user_id=' + user_id + '&cours_id=' + cours_id, {
-                method: 'GET'
-            }).then(function(response) {
-                if (response.ok) {
-                    window.location.href = 'index.php?action=myCourses';
-                } else {
-                    console.error('Enrollment failed.');
+            if (!user_id) {
+                alert('Please login to enroll in courses.');
+                window.location.href = 'index.php?action=loginPage';
+                return;
+            }
+
+            if (!cours_id) {
+                console.error('No course ID provided');
+                alert('Error: Course ID is missing');
+                return;
+            }
+
+            console.log('Starting enrollment process...');
+            console.log('Course ID:', cours_id);
+            console.log('User ID:', user_id);
+
+            const formData = new FormData();
+            formData.append('user_id', user_id);
+            formData.append('cours_id', cours_id);
+
+            // Log the form data
+            for (let [key, value] of formData.entries()) {
+                console.log('Form data -', key + ':', value);
+            }
+
+            fetch('index.php?action=inscrireCours', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                console.log('Response received');
+                console.log('Response status:', response.status);
+                console.log('Response headers:', [...response.headers.entries()]);
+                
+                // First check if we got a successful response
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
+                
+                // Try to parse as JSON, but first log the raw response
+                return response.text().then(text => {
+                    console.log('Raw response:', text);
+                    try {
+                        return JSON.parse(text);
+                    } catch (e) {
+                        console.error('JSON parse error:', e);
+                        throw new Error('Invalid JSON response from server');
+                    }
+                });
+            })
+            .then(data => {
+                console.log('Parsed response data:', data);
+                
+                if (!data) {
+                    throw new Error('Empty response from server');
+                }
+                
+                if (data.status === 'error') {
+                    console.error('Server reported error:', data.message);
+                    alert('Error: ' + data.message);
+                } else {
+                    console.log('Enrollment successful:', data.message);
+                    alert(data.message);
+                    window.location.href = 'index.php?action=myCourses';
+                }
+            })
+            .catch(error => {
+                console.error('Detailed error:', error);
+                console.error('Error stack:', error.stack);
+                alert('Failed to enroll in the course. Please try again. Error: ' + error.message);
             });
+
+            console.log('Closing modal...');
             closeModal();
         }
 

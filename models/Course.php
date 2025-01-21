@@ -14,8 +14,11 @@ class Course {
     private $tagid = null;
 
     public function __construct($db) {
-        $db = DatabaseConnection::getInstance();
-        $this->db = $db->getConnection();
+        if ($db instanceof DatabaseConnection) {
+            $this->db = $db->getConnection();
+        } else {
+            $this->db = $db;
+        }
         $this->id = null;
         $this->titre = '';
         $this->description = '';
@@ -125,30 +128,116 @@ class Course {
 
     public function getMyCourses($user_id) {
         if (empty($user_id) || !is_numeric($user_id)) {
-            throw new Exception('Invalid user ID.');
+            throw new Exception('Invalid user ID');
         }
-        $query = "SELECT c.*, u.nom as teacher_name, cat.nom as category_name, i.etudiant_id as inscrit
-                  FROM inscriptions i 
-                  JOIN cours c ON i.cours_id = c.id
-                  JOIN utilisateurs u ON c.enseignant_id = u.id
-                  JOIN categories cat ON c.categorie_id = cat.id
-                  WHERE i.etudiant_id = :user_id";
         
-        $stmt = $this->db->prepare($query);
-        $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        try {
+            $stmt = $this->db->prepare("
+                SELECT c.*, u.nom as teacher_name, cat.nom as category_name,
+                       i.date_inscription
+                FROM cours c
+                INNER JOIN inscriptions i ON c.id = i.cours_id
+                INNER JOIN utilisateurs u ON c.enseignant_id = u.id
+                INNER JOIN categories cat ON c.categorie_id = cat.id
+                WHERE i.etudiant_id = :user_id
+                ORDER BY i.date_inscription DESC
+            ");
+            
+            $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
+            $stmt->execute();
+            
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Error fetching courses: " . $e->getMessage());
+            throw new Exception('Error fetching enrolled courses');
+        }
     }
 
     public function inscrireCours($user_id, $cours_id) {
-        if (empty($user_id) || !is_numeric($user_id)) {
-            throw new Exception('Invalid user ID.');
+        if (empty($user_id) || !is_numeric($user_id) || empty($cours_id) || !is_numeric($cours_id)) {
+            throw new Exception('Invalid user ID or course ID');
         }
-        $query = "INSERT INTO inscriptions (etudiant_id, cours_id) VALUES (:user_id, :cours_id)";
-        $stmt = $this->db->prepare($query);
-        $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
-        $stmt->bindParam(':cours_id', $cours_id, PDO::PARAM_INT);
-        return $stmt->execute();
+
+        try {
+            error_log("Starting enrollment - User ID: $user_id, Course ID: $cours_id");
+            
+            $this->db->beginTransaction();
+
+            // Check if the user exists
+            $userCheck = $this->db->prepare("SELECT id FROM utilisateurs WHERE id = :user_id AND role = 'etudiant'");
+            $userCheck->bindParam(':user_id', $user_id, PDO::PARAM_INT);
+            $userCheck->execute();
+            
+            if (!$userCheck->fetch()) {
+                $this->db->rollBack();
+                throw new Exception('Invalid student ID');
+            }
+
+            // Check if the course exists
+            $courseCheck = $this->db->prepare("SELECT id FROM cours WHERE id = :cours_id");
+            $courseCheck->bindParam(':cours_id', $cours_id, PDO::PARAM_INT);
+            $courseCheck->execute();
+            
+            if (!$courseCheck->fetch()) {
+                $this->db->rollBack();
+                throw new Exception('Course does not exist');
+            }
+
+            // Check if already enrolled
+            $enrollCheck = $this->db->prepare("SELECT id FROM inscriptions WHERE etudiant_id = :user_id AND cours_id = :cours_id");
+            $enrollCheck->bindParam(':user_id', $user_id, PDO::PARAM_INT);
+            $enrollCheck->bindParam(':cours_id', $cours_id, PDO::PARAM_INT);
+            $enrollCheck->execute();
+            
+            if ($enrollCheck->fetch()) {
+                $this->db->rollBack();
+                throw new Exception('Already enrolled in this course');
+            }
+
+            // Insert the enrollment
+            $insert = $this->db->prepare("
+                INSERT INTO inscriptions (etudiant_id, cours_id, date_inscription) 
+                VALUES (:user_id, :cours_id, NOW())
+            ");
+            $insert->bindParam(':user_id', $user_id, PDO::PARAM_INT);
+            $insert->bindParam(':cours_id', $cours_id, PDO::PARAM_INT);
+            
+            if (!$insert->execute()) {
+                $error = $insert->errorInfo();
+                $this->db->rollBack();
+                error_log("Insert error: " . print_r($error, true));
+                throw new Exception('Failed to enroll in course');
+            }
+
+            $this->db->commit();
+            error_log("Successfully enrolled user $user_id in course $cours_id");
+            return true;
+
+        } catch (PDOException $e) {
+            error_log("Database error: " . $e->getMessage());
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            throw new Exception('Database error: ' . $e->getMessage());
+        }
     }
-    
+
+    public function isEnrolled($user_id, $cours_id) {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT COUNT(*) 
+                FROM inscriptions 
+                WHERE etudiant_id = :user_id 
+                AND cours_id = :cours_id
+            ");
+            $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
+            $stmt->bindParam(':cours_id', $cours_id, PDO::PARAM_INT);
+            $stmt->execute();
+            
+            return $stmt->fetchColumn() > 0;
+        } catch (PDOException $e) {
+            error_log("Error checking enrollment: " . $e->getMessage());
+            throw new Exception('Error checking enrollment status');
+        }
+    }
 }

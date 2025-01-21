@@ -71,24 +71,151 @@ class CourseController
         require_once __DIR__ . '/../views/myCourses.php';
     }
 
-    public function getMyCourses()
-    {
-        // session_start();
-        $role = isset($_SESSION['role']) ? $_SESSION['role'] : null;
-        $userName = isset($_SESSION['name']) ? $_SESSION['name'] : '';
-        $userId = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null;
-        $courses = $this->course->getMyCourses($userId);
-        $courses = array_map(function ($course) {
-            $course['titre'] = $course['titre'];
-            $course['image'] = $course['image'];
-            return $course;
-        }, $courses);
-        require_once __DIR__ . '/../views/myCourses.php';
+    public function getMyCourses() {
+        try {
+            // Start session if not already started
+            if (session_status() === PHP_SESSION_NONE) {
+                session_start();
+            }
+
+            // Ensure user is logged in and is a student
+            if (!isset($_SESSION['user_id'])) {
+                throw new Exception('User not logged in');
+            }
+            
+            if ($_SESSION['role'] !== 'etudiant') {
+                throw new Exception('User is not a student');
+            }
+
+            $userId = $_SESSION['user_id'];
+            $role = $_SESSION['role'];
+            $userName = $_SESSION['name'];
+
+            try {
+                $courses = $this->course->getMyCourses($userId);
+                
+                // Transform image paths if needed
+                $courses = array_map(function ($course) {
+                    if (isset($course['image'])) {
+                        $course['image'] = $course['image'];
+                    }
+                    return $course;
+                }, $courses);
+
+                // Load the view with the courses
+                require_once __DIR__ . '/../views/myCourses.php';
+            } catch (Exception $e) {
+                error_log("Error loading courses: " . $e->getMessage());
+                $_SESSION['error'] = "Error loading courses: " . $e->getMessage();
+                header("Location: index.php?action=courses");
+                exit;
+            }
+        } catch (Exception $e) {
+            error_log("Access error: " . $e->getMessage());
+            $_SESSION['error'] = $e->getMessage();
+            header("Location: index.php?action=loginPage");
+            exit;
+        }
     }
 
-    public function inscrireCours($user_id, $cours_id) {
-        $this->course->inscrireCours($user_id, $cours_id);
-        header("Location: index.php?action=myCourses");
-        exit;
+    public function inscrireCours() {
+        // Start output buffering to catch any unwanted output
+        ob_start();
+        
+        try {
+            // Set headers
+            header('Content-Type: application/json');
+            
+            // Debug information
+            error_log("=== Starting Course Enrollment ===");
+            error_log("Request Method: " . $_SERVER['REQUEST_METHOD']);
+            error_log("POST Data: " . print_r($_POST, true));
+            
+            // Ensure the request is POST
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                throw new Exception('Invalid request method');
+            }
+
+            // Start session if not already started
+            if (session_status() === PHP_SESSION_NONE) {
+                session_start();
+            }
+
+            // Log session state
+            error_log("Session State: " . print_r($_SESSION, true));
+
+            // Get parameters from POST data
+            $user_id = filter_input(INPUT_POST, 'user_id', FILTER_VALIDATE_INT);
+            $cours_id = filter_input(INPUT_POST, 'cours_id', FILTER_VALIDATE_INT);
+
+            error_log("Parsed Parameters - User ID: $user_id, Course ID: $cours_id");
+
+            // Validate parameters
+            if ($user_id === false || $user_id === null || $cours_id === false || $cours_id === null) {
+                error_log("Invalid parameters - user_id: $user_id, cours_id: $cours_id");
+                throw new Exception('Invalid parameters provided');
+            }
+
+            // Verify session exists
+            if (!isset($_SESSION['user_id'])) {
+                error_log("No user_id in session");
+                throw new Exception('User not logged in');
+            }
+
+            // Verify user ID matches session
+            if ($_SESSION['user_id'] != $user_id) {
+                error_log("User ID mismatch - Session: {$_SESSION['user_id']}, Request: $user_id");
+                throw new Exception('Invalid user ID');
+            }
+
+            // Verify user is a student
+            if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'etudiant') {
+                error_log("Invalid role - Expected: etudiant, Got: " . (isset($_SESSION['role']) ? $_SESSION['role'] : 'none'));
+                throw new Exception('User is not a student');
+            }
+
+            try {
+                // Check if already enrolled
+                if ($this->course->isEnrolled($user_id, $cours_id)) {
+                    error_log("User already enrolled - User ID: $user_id, Course ID: $cours_id");
+                    throw new Exception('Already enrolled in this course');
+                }
+
+                // Try to enroll
+                $result = $this->course->inscrireCours($user_id, $cours_id);
+                error_log("Enrollment result: " . ($result ? 'success' : 'failure'));
+                
+                if ($result) {
+                    // Clear any previous output
+                    ob_clean();
+                    
+                    $response = ['status' => 'success', 'message' => 'Successfully enrolled in course'];
+                    error_log("Sending success response: " . json_encode($response));
+                    echo json_encode($response);
+                    exit;
+                } else {
+                    throw new Exception('Failed to enroll in course');
+                }
+            } catch (Exception $e) {
+                error_log("Error during enrollment: " . $e->getMessage());
+                throw new Exception('Failed to enroll: ' . $e->getMessage());
+            }
+
+        } catch (Exception $e) {
+            error_log("Final error: " . $e->getMessage());
+            error_log("Error trace: " . $e->getTraceAsString());
+            
+            // Clear any previous output
+            ob_clean();
+            
+            http_response_code(400);
+            $response = ['status' => 'error', 'message' => $e->getMessage()];
+            error_log("Sending error response: " . json_encode($response));
+            echo json_encode($response);
+            exit;
+        }
+        
+        error_log("=== End Course Enrollment ===");
+        ob_end_flush();
     }
 }

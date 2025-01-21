@@ -87,6 +87,9 @@ switch ($action) {
     case 'search':
         $courseController->handleSearch();
         break;
+    case 'inscrireCours':
+        $courseController->inscrireCours();
+        break;
 
     default:
         require_once 'views/404.php';
