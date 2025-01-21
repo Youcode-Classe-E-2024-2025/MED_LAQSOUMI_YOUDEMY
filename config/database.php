@@ -12,7 +12,7 @@ class DatabaseConnection {
     private function __construct() {
         try {
             $this->db = new PDO(
-                "mysql:host={$this->host};dbname={$this->dbname};charset=utf8mb4",
+                "mysql:host={$this->host};dbname={$this->dbname};charset=utf8",
                 $this->username,
                 $this->password
             );
