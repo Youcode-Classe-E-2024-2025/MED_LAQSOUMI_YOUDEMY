@@ -1,9 +1,6 @@
 <?php
 require_once __DIR__ . '/../models/Utilisateur.php';
-require_once __DIR__ . '/../models/Course.php';
-require_once __DIR__ . '/../models/Enseignant.php';
-require_once __DIR__ . '/../models/Etudiant.php';
-// 
+
 class UtilisateurController
 {
     private $db;

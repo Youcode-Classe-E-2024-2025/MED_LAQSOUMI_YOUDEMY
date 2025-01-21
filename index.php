@@ -3,6 +3,7 @@
 require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/controllers/UtilisateurController.php';
 require_once __DIR__ . '/controllers/CourseController.php';
+require_once __DIR__ . '/controllers/EnseignantController.php';
 // require_once __DIR__ . '/controllers/EnseignantController.php';
 // require_once __DIR__ . '/controllers/EtudiantController.php';
 // require_once __DIR__ . '/controllers/AdminController.php';
@@ -11,7 +12,7 @@ require_once __DIR__ . '/controllers/CourseController.php';
 $db = DatabaseConnection::getInstance();
 $user = new UtilisateurController($db);
 $courseController = new CourseController($db);
-// $enseignantController = new EnseignantController($db);
+$enseignantController = new EnseignantController($db);
 // $etudiantController = new EtudiantController($db);
 // $adminController = new AdminController($db);
 

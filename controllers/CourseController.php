@@ -1,10 +1,12 @@
 <?php
 require_once __DIR__ . '/../models/Course.php';
+require_once __DIR__ . '/../models/Inscription.php';
 
 class CourseController
 {
     private $db;
     private $course;
+    private $inscription;
 
     public function __construct($db)
     {

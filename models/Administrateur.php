@@ -6,7 +6,8 @@ class Administrateur extends User {
     }
 
     public function validerCompteEnseignant() {
-        // Code pour consulter les cours de l'étudiant
+        // Code pour valider le compte de l'enseignant
+        
         
     }
 

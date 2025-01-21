@@ -26,14 +26,6 @@ class Course {
         $this->tagid = null;
     }
 
-    // public function ajouterTag($tagId){
-    //     $query = "INSERT INTO cours_tags (course_id, tag_id) VALUES (:course_id, :tag_id)";
-    //     $stmt = $this->db->prepare($query);
-    //     $stmt->bindParam(':course_id', $this->id, PDO::PARAM_INT);
-    //     $stmt->bindParam(':tag_id', $tagId, PDO::PARAM_INT);
-    //     return $stmt->execute();
-    // }
-
     // public function afficherDetails() {
     //     $query = "SELECT c.*, u.nom as teacher_name, cat.nom as category_name 
     //               FROM cours c
@@ -150,5 +142,4 @@ class Course {
         $stmt->bindParam(':cours_id', $cours_id, PDO::PARAM_INT);
         return $stmt->execute();
     }
-    
 }
