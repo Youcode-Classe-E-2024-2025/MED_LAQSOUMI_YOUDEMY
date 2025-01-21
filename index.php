@@ -36,6 +36,11 @@ switch ($action) {
     case 'myCourses':
         $courseController->getMyCourses();
         break;
+    case 'inscrireCours':
+        $user_id = isset($_GET['user_id']) ? $_GET['user_id'] : null;
+        $cours_id = isset($_GET['cours_id']) ? $_GET['cours_id'] : null;
+        $courseController->inscrireCours($user_id, $cours_id);
+        break;
     case 'teacherDashboard':
         require_once 'views/teacher_Dashboard.php';
         break;

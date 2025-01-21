@@ -124,6 +124,9 @@ class Course {
     }
 
     public function getMyCourses($user_id) {
+        if (empty($user_id) || !is_numeric($user_id)) {
+            throw new Exception('Invalid user ID.');
+        }
         $query = "SELECT c.*, u.nom as teacher_name, cat.nom as category_name, i.etudiant_id as inscrit
                   FROM inscriptions i 
                   JOIN cours c ON i.cours_id = c.id
@@ -138,6 +141,9 @@ class Course {
     }
 
     public function inscrireCours($user_id, $cours_id) {
+        if (empty($user_id) || !is_numeric($user_id)) {
+            throw new Exception('Invalid user ID.');
+        }
         $query = "INSERT INTO inscriptions (etudiant_id, cours_id) VALUES (:user_id, :cours_id)";
         $stmt = $this->db->prepare($query);
         $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
