@@ -1,11 +1,11 @@
 <?php require_once __DIR__ . '/../layouts/header.php'; ?>
 
-<div class="container mt-5">
+<div class="container mt-4">
     <div class="row justify-content-center">
         <div class="col-md-6">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white">
-                    <h4 class="card-title mb-0">Register for YouDemy</h4>
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Create an Account</h4>
                 </div>
                 <div class="card-body">
                     <?php if (isset($_SESSION['error'])): ?>
@@ -20,49 +20,39 @@
                             <label for="nom" class="form-label">Full Name</label>
                             <input type="text" class="form-control" id="nom" name="nom" required>
                         </div>
+
                         <div class="mb-3">
-                            <label for="email" class="form-label">Email address</label>
+                            <label for="email" class="form-label">Email Address</label>
                             <input type="email" class="form-control" id="email" name="email" required>
                         </div>
+
                         <div class="mb-3">
-                            <label for="password" class="form-label">Password</label>
-                            <input type="password" class="form-control" id="password" name="password" 
-                                   required minlength="6">
-                            <div class="form-text">Password must be at least 6 characters long.</div>
+                            <label for="mot_de_passe" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="mot_de_passe" name="mot_de_passe" required>
                         </div>
+
                         <div class="mb-3">
-                            <label for="role" class="form-label">I want to</label>
+                            <label for="role" class="form-label">I want to:</label>
                             <select class="form-select" id="role" name="role" required>
-                                <option value="">Choose your role</option>
-                                <option value="etudiant">Learn on YouDemy</option>
-                                <option value="enseignant">Teach on YouDemy</option>
+                                <option value="">Choose your role...</option>
+                                <option value="etudiant">Learn - Register as Student</option>
+                                <option value="enseignant">Teach - Register as Teacher</option>
                             </select>
                         </div>
-                        <div id="teacherInfo" class="alert alert-info d-none">
-                            Note: Teacher accounts require admin validation before you can start creating courses.
-                        </div>
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary">Register</button>
-                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">Create Account</button>
                     </form>
-                </div>
-                <div class="card-footer text-center">
-                    <p class="mb-0">Already have an account? <a href="index.php?action=login">Login here</a></p>
+
+                    <div class="mt-3 text-center">
+                        <p class="mb-0">
+                            Already have an account? 
+                            <a href="index.php?action=login">Login here</a>
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
-
-<script>
-document.getElementById('role').addEventListener('change', function() {
-    const teacherInfo = document.getElementById('teacherInfo');
-    if (this.value === 'enseignant') {
-        teacherInfo.classList.remove('d-none');
-    } else {
-        teacherInfo.classList.add('d-none');
-    }
-});
-</script>
 
 <?php require_once __DIR__ . '/../layouts/footer.php'; ?>

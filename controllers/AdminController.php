@@ -126,36 +126,92 @@ class AdminController {
                     $tags = array_map('trim', explode(',', $_POST['tags']));
                     Tag::bulkCreate($tags);
                     $_SESSION['success'] = "Tags created successfully.";
+                } elseif (isset($_POST['nom'])) {
+                    // Single tag insert
+                    Tag::create(['nom' => $_POST['nom']]);
+                    $_SESSION['success'] = "Tag created successfully.";
                 }
             } catch (Exception $e) {
-                $_SESSION['error'] = "Error creating tags: " . $e->getMessage();
+                $_SESSION['error'] = "Error creating tag(s): " . $e->getMessage();
             }
+            header('Location: index.php?action=admin&page=tags');
+            exit;
+        }
+
+        // Handle tag deletion
+        if (isset($_GET['delete'])) {
+            try {
+                $tagId = (int)$_GET['delete'];
+                if (Tag::canDelete($tagId)) {
+                    Tag::delete($tagId);
+                    $_SESSION['success'] = "Tag deleted successfully.";
+                } else {
+                    $_SESSION['error'] = "Cannot delete tag: it is used by one or more courses.";
+                }
+            } catch (Exception $e) {
+                $_SESSION['error'] = "Error deleting tag: " . $e->getMessage();
+            }
+            header('Location: index.php?action=admin&page=tags');
+            exit;
         }
 
         $tags = Tag::getWithCourseCount();
         require_once __DIR__ . '/../views/admin/tags/index.php';
     }
 
-    public function supprimerTag() {
+    public function gererCours() {
         if (!$this->isAdmin()) {
             header('Location: index.php?action=login');
             exit;
         }
 
-        $tagId = $_GET['id'] ?? null;
-        if ($tagId) {
+        // Handle course actions
+        if (isset($_GET['publish'])) {
             try {
-                if (Tag::canDelete($tagId)) {
-                    Tag::delete($tagId);
-                    $_SESSION['success'] = "Tag deleted successfully.";
-                } else {
-                    $_SESSION['error'] = "Cannot delete tag: it is used by courses.";
-                }
+                Course::publish($_GET['publish']);
+                $_SESSION['success'] = "Course published successfully.";
             } catch (Exception $e) {
-                $_SESSION['error'] = "Error deleting tag: " . $e->getMessage();
+                $_SESSION['error'] = "Error publishing course: " . $e->getMessage();
             }
+            header('Location: index.php?action=admin&page=courses');
+            exit;
         }
-        header('Location: index.php?action=admin&page=tags');
+
+        if (isset($_GET['unpublish'])) {
+            try {
+                Course::unpublish($_GET['unpublish']);
+                $_SESSION['success'] = "Course unpublished successfully.";
+            } catch (Exception $e) {
+                $_SESSION['error'] = "Error unpublishing course: " . $e->getMessage();
+            }
+            header('Location: index.php?action=admin&page=courses');
+            exit;
+        }
+
+        if (isset($_GET['delete'])) {
+            try {
+                Course::delete($_GET['delete']);
+                $_SESSION['success'] = "Course deleted successfully.";
+            } catch (Exception $e) {
+                $_SESSION['error'] = "Error deleting course: " . $e->getMessage();
+            }
+            header('Location: index.php?action=admin&page=courses');
+            exit;
+        }
+
+        if (isset($_GET['view'])) {
+            $course = Course::getWithDetails($_GET['view']);
+            if ($course) {
+                require_once __DIR__ . '/../views/admin/courses/view.php';
+                return;
+            }
+            $_SESSION['error'] = "Course not found.";
+            header('Location: index.php?action=admin&page=courses');
+            exit;
+        }
+
+        $courses = Course::getAllWithDetails();
+        require_once __DIR__ . '/../views/admin/courses/index.php';
     }
 
     private function isAdmin() {

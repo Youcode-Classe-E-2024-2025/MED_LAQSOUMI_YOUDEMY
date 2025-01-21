@@ -2,9 +2,7 @@
 
 require_once __DIR__ . '/../models/Course.php';
 require_once __DIR__ . '/../models/Category.php';
-require_once __DIR__ . '/../models/Tag.php';
-require_once __DIR__ . '/../models/Enrollment.php';
-require_once __DIR__ . '/../models/Statistics.php';
+require_once __DIR__ . '/../models/User.php';
 
 class EtudiantController {
     public function index() {
@@ -13,126 +11,96 @@ class EtudiantController {
             exit;
         }
 
-        $stats = Statistics::getStudentStats($_SESSION['user']['id']);
-        require_once __DIR__ . '/../views/etudiant/dashboard.php';
+        $studentId = $_SESSION['user']['id'];
+        $myCourses = Course::getEnrolledCourses($studentId);
+        require_once __DIR__ . '/../views/student/dashboard.php';
     }
 
-    public function parcourirCours() {
+    public function courses() {
         if (!$this->isStudent()) {
             header('Location: index.php?action=login');
             exit;
         }
 
-        $filters = [
-            'search' => $_GET['search'] ?? null,
-            'category' => $_GET['category'] ?? null,
-            'sort' => $_GET['sort'] ?? 'recent'
-        ];
+        $page = isset($_GET['p']) ? (int)$_GET['p'] : 1;
+        $search = isset($_GET['search']) ? trim($_GET['search']) : '';
+        $categoryId = isset($_GET['category']) ? (int)$_GET['category'] : null;
 
-        $page = isset($_GET['p']) ? max(1, intval($_GET['p'])) : 1;
-        $perPage = 12;
+        $coursesData = Course::getPublishedCourses($page, 9, $search, $categoryId);
+        $categories = Category::getAll();
 
-        $cours = Course::search($filters, $page, $perPage);
-        $categories = Category::findAll();
-
-        // Build query string for pagination
-        $queryParams = array_filter($filters);
-        $query_string = !empty($queryParams) ? '&' . http_build_query($queryParams) : '';
-
-        // Add enrolled status for each course
-        foreach ($cours as &$course) {
-            $course['is_enrolled'] = Enrollment::isEnrolled($_SESSION['user']['id'], $course['id']);
-        }
-
-        require_once __DIR__ . '/../views/etudiant/courses/index.php';
+        require_once __DIR__ . '/../views/student/courses/index.php';
     }
 
-    public function voirCours() {
+    public function viewCourse($id) {
+        if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'etudiant') {
+            header('Location: index.php?action=login');
+            exit;
+        }
+
+        $studentId = $_SESSION['user']['id'];
+        $course = Course::getCourseWithDetails($id);
+        $isEnrolled = Course::isStudentEnrolled($id, $studentId);
+        
+        if ($isEnrolled) {
+            // Get enrollment details including completion status
+            $enrollment = Course::getEnrollmentDetails($id, $studentId);
+            $course['completed'] = $enrollment['completed'];
+        } else {
+            $course['completed'] = false;
+        }
+
+        require_once __DIR__ . '/../views/student/courses/view-course.php';
+    }
+
+    public function enroll() {
         if (!$this->isStudent()) {
             header('Location: index.php?action=login');
             exit;
         }
 
-        $courseId = $_GET['id'] ?? null;
-        if (!$courseId) {
-            header('Location: index.php?action=etudiant&page=courses');
-            exit;
-        }
-
-        $course = Course::getWithDetails($courseId);
-        if (!$course) {
-            $_SESSION['error'] = "Course not found.";
-            header('Location: index.php?action=etudiant&page=courses');
-            exit;
-        }
-
-        $isEnrolled = Enrollment::isEnrolled($_SESSION['user']['id'], $courseId);
-        require_once __DIR__ . '/../views/etudiant/courses/view.php';
-    }
-
-    public function sInscrire() {
-        if (!$this->isStudent()) {
-            header('Location: index.php?action=login');
-            exit;
-        }
-
-        $courseId = $_GET['course'] ?? null;
-        if (!$courseId) {
-            header('Location: index.php?action=etudiant&page=courses');
-            exit;
-        }
+        $courseId = isset($_GET['course']) ? (int)$_GET['course'] : 0;
+        $studentId = $_SESSION['user']['id'];
 
         try {
-            if (!Enrollment::isEnrolled($_SESSION['user']['id'], $courseId)) {
-                Enrollment::create([
-                    'etudiant_id' => $_SESSION['user']['id'],
-                    'cours_id' => $courseId
-                ]);
-                $_SESSION['success'] = "Successfully enrolled in the course.";
-            } else {
-                $_SESSION['error'] = "You are already enrolled in this course.";
+            if (!$courseId) {
+                throw new Exception("Invalid course selected.");
             }
-        } catch (Exception $e) {
-            $_SESSION['error'] = "Error enrolling in course: " . $e->getMessage();
-        }
 
-        header('Location: index.php?action=etudiant&page=course&id=' . $courseId);
+            // Check if course exists and is published
+            $course = Course::getWithDetails($courseId);
+            if (!$course || !$course['published']) {
+                throw new Exception("Course not found or not available.");
+            }
+
+            // Check if already enrolled
+            if (Course::isStudentEnrolled($courseId, $studentId)) {
+                throw new Exception("You are already enrolled in this course.");
+            }
+
+            // Enroll student
+            if (Course::enrollStudent($courseId, $studentId)) {
+                $_SESSION['success'] = "Successfully enrolled in the course!";
+                header('Location: index.php?action=etudiant&page=course&id=' . $courseId);
+                exit;
+            }
+
+        } catch (Exception $e) {
+            $_SESSION['error'] = $e->getMessage();
+            header('Location: index.php?action=etudiant&page=courses');
+            exit;
+        }
     }
 
-    public function mesCoursInscrits() {
+    public function myCourses() {
         if (!$this->isStudent()) {
             header('Location: index.php?action=login');
             exit;
         }
 
-        $enrollments = Enrollment::getStudentEnrollments($_SESSION['user']['id']);
-        require_once __DIR__ . '/../views/etudiant/courses/enrolled.php';
-    }
-
-    public function marquerTermine() {
-        if (!$this->isStudent()) {
-            header('Location: index.php?action=login');
-            exit;
-        }
-
-        $courseId = $_GET['course'] ?? null;
-        if (!$courseId) {
-            header('Location: index.php?action=etudiant&page=enrolled');
-            exit;
-        }
-
-        try {
-            if (Enrollment::isEnrolled($_SESSION['user']['id'], $courseId)) {
-                Enrollment::markCompleted($_SESSION['user']['id'], $courseId);
-                $_SESSION['success'] = "Course marked as completed.";
-            } else {
-                $_SESSION['error'] = "You are not enrolled in this course.";
-            }
-        } catch (Exception $e) {
-            $_SESSION['error'] = "Error marking course as completed: " . $e->getMessage();
-        }
-
-        header('Location: index.php?action=etudiant&page=enrolled');
+        $studentId = $_SESSION['user']['id'];
+        $enrolledCourses = Course::getEnrolledCourses($studentId);
+        require_once __DIR__ . '/../views/student/courses/my-courses.php';
     }
 
     private function isStudent() {

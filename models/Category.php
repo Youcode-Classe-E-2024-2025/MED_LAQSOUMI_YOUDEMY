@@ -4,6 +4,16 @@ require_once 'Model.php';
 class Category extends Model {
     protected static $table = 'categories';
 
+    public static function getAll() {
+        $db = self::getConnection();
+        $sql = "SELECT c.*, COUNT(co.id) as course_count 
+                FROM categories c
+                LEFT JOIN cours co ON c.id = co.categorie_id
+                GROUP BY c.id, c.nom
+                ORDER BY c.nom ASC";
+        return $db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     public static function create($data) {
         $db = self::getConnection();
         $stmt = $db->prepare("INSERT INTO categories (nom) VALUES (?)");

@@ -4,7 +4,9 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1>Tag Management</h1>
         <div>
-            <a href="index.php?action=admin&page=tags&bulk=true" class="btn btn-success">Bulk Insert Tags</a>
+            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#bulkInsertModal">
+                Bulk Insert Tags
+            </button>
             <a href="index.php?action=admin" class="btn btn-secondary">Back to Dashboard</a>
         </div>
     </div>
@@ -52,6 +54,7 @@
                             <thead>
                                 <tr>
                                     <th>Name</th>
+                                    <th>Courses</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -60,31 +63,42 @@
                                     <tr>
                                         <td><?= htmlspecialchars($tag['nom']) ?></td>
                                         <td>
-                                            <button type="button" class="btn btn-sm btn-danger" 
-                                                    data-bs-toggle="modal" 
-                                                    data-bs-target="#deleteModal<?= $tag['id'] ?>">
-                                                Delete
-                                            </button>
+                                            <span class="badge bg-info">
+                                                <?= $tag['course_count'] ?> course<?= $tag['course_count'] != 1 ? 's' : '' ?>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <?php if ($tag['course_count'] == 0): ?>
+                                                <button type="button" class="btn btn-sm btn-danger" 
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#deleteModal<?= $tag['id'] ?>">
+                                                    Delete
+                                                </button>
 
-                                            <!-- Delete Modal -->
-                                            <div class="modal fade" id="deleteModal<?= $tag['id'] ?>" tabindex="-1">
-                                                <div class="modal-dialog">
-                                                    <div class="modal-content">
-                                                        <div class="modal-header">
-                                                            <h5 class="modal-title">Confirm Deletion</h5>
-                                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                                        </div>
-                                                        <div class="modal-body">
-                                                            Are you sure you want to delete tag "<?= htmlspecialchars($tag['nom']) ?>"?
-                                                        </div>
-                                                        <div class="modal-footer">
-                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                                            <a href="index.php?action=admin&page=tags&delete=<?= $tag['id'] ?>" 
-                                                               class="btn btn-danger">Delete</a>
+                                                <!-- Delete Modal -->
+                                                <div class="modal fade" id="deleteModal<?= $tag['id'] ?>" tabindex="-1">
+                                                    <div class="modal-dialog">
+                                                        <div class="modal-content">
+                                                            <div class="modal-header">
+                                                                <h5 class="modal-title">Confirm Deletion</h5>
+                                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                            </div>
+                                                            <div class="modal-body">
+                                                                Are you sure you want to delete tag "<?= htmlspecialchars($tag['nom']) ?>"?
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                                <a href="index.php?action=admin&page=tags&delete=<?= $tag['id'] ?>" 
+                                                                   class="btn btn-danger">Delete</a>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
-                                            </div>
+                                            <?php else: ?>
+                                                <button type="button" class="btn btn-sm btn-danger" disabled title="Cannot delete tag: it is used by courses">
+                                                    Delete
+                                                </button>
+                                            <?php endif; ?>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -93,6 +107,31 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Insert Modal -->
+<div class="modal fade" id="bulkInsertModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Bulk Insert Tags</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="index.php?action=admin&page=tags" method="POST">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="tags" class="form-label">Enter Tags (comma-separated)</label>
+                        <textarea class="form-control" id="tags" name="tags" rows="4" required 
+                                placeholder="e.g., PHP, JavaScript, HTML, CSS"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Tags</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

@@ -22,7 +22,9 @@ class Tag extends Model {
         try {
             $stmt = $db->prepare("INSERT INTO tags (nom) VALUES (?)");
             foreach ($tags as $tag) {
-                $stmt->execute([$tag]);
+                if (!empty(trim($tag))) {
+                    $stmt->execute([trim($tag)]);
+                }
             }
             $db->commit();
             return true;
@@ -39,5 +41,34 @@ class Tag extends Model {
                              WHERE ct.cours_id = ?");
         $stmt->execute([$courseId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public static function getWithCourseCount() {
+        $db = self::getConnection();
+        $sql = "SELECT t.*, COUNT(ct.cours_id) as course_count 
+                FROM tags t 
+                LEFT JOIN cours_tags ct ON t.id = ct.tag_id 
+                GROUP BY t.id, t.nom 
+                ORDER BY t.nom";
+        $stmt = $db->query($sql);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public static function canDelete($tagId) {
+        $db = self::getConnection();
+        $stmt = $db->prepare("SELECT COUNT(*) as count FROM cours_tags WHERE tag_id = ?");
+        $stmt->execute([$tagId]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result['count'] == 0;
+    }
+
+    public static function delete($tagId) {
+        if (!self::canDelete($tagId)) {
+            throw new Exception("Cannot delete tag: it is used by one or more courses");
+        }
+        
+        $db = self::getConnection();
+        $stmt = $db->prepare("DELETE FROM tags WHERE id = ?");
+        return $stmt->execute([$tagId]);
     }
 }

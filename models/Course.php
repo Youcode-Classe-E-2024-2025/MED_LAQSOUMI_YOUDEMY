@@ -6,7 +6,8 @@ class Course extends Model {
 
     public static function create($data) {
         $db = self::getConnection();
-        $stmt = $db->prepare("INSERT INTO cours (titre, description, contenu, image, categorie_id, enseignant_id) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt = $db->prepare("INSERT INTO cours (titre, description, contenu, image, categorie_id, enseignant_id, published) 
+                             VALUES (?, ?, ?, ?, ?, ?, ?)");
         $db->beginTransaction();
         try {
             $stmt->execute([
@@ -15,7 +16,8 @@ class Course extends Model {
                 $data['contenu'],
                 $data['image'] ?? null,
                 $data['categorie_id'],
-                $data['enseignant_id']
+                $data['enseignant_id'],
+                $data['published'] ?? 0
             ]);
             $courseId = $db->lastInsertId();
 
@@ -51,6 +53,12 @@ class Course extends Model {
             $params[] = $data['image'];
         }
 
+        // Add published status if provided
+        if (isset($data['published'])) {
+            $updateFields[] = "published = ?";
+            $params[] = $data['published'];
+        }
+
         $params[] = $id;  // Add id for WHERE clause
 
         $sql = "UPDATE cours SET " . implode(", ", $updateFields) . " WHERE id = ?";
@@ -81,6 +89,216 @@ class Course extends Model {
         }
     }
 
+    public static function getPublishedCourses($page = 1, $perPage = 9, $search = '', $categoryId = null) {
+        $db = self::getConnection();
+        
+        $params = [];
+        $types = [];  // Store parameter types for proper binding
+        $conditions = ["c.published = 1"];
+        
+        if ($search) {
+            $conditions[] = "(c.titre LIKE ? OR c.description LIKE ?)";
+            $params[] = "%$search%";
+            $params[] = "%$search%";
+            $types[] = PDO::PARAM_STR;
+            $types[] = PDO::PARAM_STR;
+        }
+        
+        if ($categoryId) {
+            $conditions[] = "c.categorie_id = ?";
+            $params[] = $categoryId;
+            $types[] = PDO::PARAM_INT;
+        }
+        
+        $whereClause = implode(" AND ", $conditions);
+        
+        // Get total count for pagination
+        $countSql = "SELECT COUNT(DISTINCT c.id) as count 
+                     FROM cours c
+                     WHERE $whereClause";
+        $countStmt = $db->prepare($countSql);
+        foreach ($params as $key => $value) {
+            $countStmt->bindValue($key + 1, $value, $types[$key] ?? PDO::PARAM_STR);
+        }
+        $countStmt->execute();
+        $total = $countStmt->fetch(PDO::FETCH_ASSOC)['count'];
+        
+        // Calculate pagination
+        $totalPages = ceil($total / $perPage);
+        $offset = ($page - 1) * $perPage;
+        
+        // Get courses
+        $sql = "SELECT c.*, cat.nom as category_name, u.nom as teacher_name,
+                       COUNT(DISTINCT i.etudiant_id) as student_count
+                FROM cours c
+                LEFT JOIN categories cat ON c.categorie_id = cat.id
+                LEFT JOIN utilisateurs u ON c.enseignant_id = u.id
+                LEFT JOIN inscriptions i ON c.id = i.cours_id
+                WHERE $whereClause
+                GROUP BY c.id, c.titre, c.description, c.image, 
+                         c.categorie_id, c.enseignant_id, c.created_at,
+                         cat.nom, u.nom
+                ORDER BY c.created_at DESC
+                LIMIT ?, ?";
+        
+        $stmt = $db->prepare($sql);
+        
+        // Bind where clause parameters
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key + 1, $value, $types[$key] ?? PDO::PARAM_STR);
+        }
+        
+        // Bind pagination parameters
+        $paramCount = count($params);
+        $stmt->bindValue($paramCount + 1, $offset, PDO::PARAM_INT);
+        $stmt->bindValue($paramCount + 2, $perPage, PDO::PARAM_INT);
+        
+        $stmt->execute();
+        $courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        return [
+            'courses' => $courses,
+            'total' => $total,
+            'per_page' => $perPage,
+            'total_pages' => $totalPages,
+            'current_page' => $page
+        ];
+    }
+
+    public static function getEnrolledCourses($studentId) {
+        $db = self::getConnection();
+        $sql = "SELECT c.*, cat.nom as category_name, u.nom as teacher_name,
+                       i.created_at as enrollment_date, i.completed,
+                       (SELECT COUNT(*) FROM inscriptions i2 WHERE i2.cours_id = c.id) as student_count
+                FROM cours c
+                INNER JOIN inscriptions i ON c.id = i.cours_id
+                LEFT JOIN categories cat ON c.categorie_id = cat.id
+                LEFT JOIN utilisateurs u ON c.enseignant_id = u.id
+                WHERE i.etudiant_id = ?
+                ORDER BY i.created_at DESC";
+        
+        $stmt = $db->prepare($sql);
+        $stmt->execute([$studentId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public static function getCourseWithDetails($id) {
+        $db = self::getConnection();
+        $sql = "SELECT c.*, cat.nom as category_name, u.nom as teacher_name,
+                       (SELECT COUNT(*) FROM inscriptions i WHERE i.cours_id = c.id) as student_count
+                FROM cours c
+                LEFT JOIN categories cat ON c.categorie_id = cat.id
+                LEFT JOIN utilisateurs u ON c.enseignant_id = u.id
+                WHERE c.id = ?";
+        
+        $stmt = $db->prepare($sql);
+        $stmt->execute([$id]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public static function getEnrollmentDetails($courseId, $studentId) {
+        $db = self::getConnection();
+        $sql = "SELECT * FROM inscriptions 
+                WHERE cours_id = ? AND etudiant_id = ?";
+        
+        $stmt = $db->prepare($sql);
+        $stmt->execute([$courseId, $studentId]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public static function isStudentEnrolled($courseId, $studentId) {
+        $db = self::getConnection();
+        $stmt = $db->prepare("SELECT COUNT(*) as count FROM inscriptions 
+                             WHERE cours_id = ? AND etudiant_id = ?");
+        $stmt->execute([$courseId, $studentId]);
+        return $stmt->fetch(PDO::FETCH_ASSOC)['count'] > 0;
+    }
+
+    public static function enrollStudent($courseId, $studentId) {
+        $db = self::getConnection();
+        $stmt = $db->prepare("INSERT INTO inscriptions (cours_id, etudiant_id, created_at) 
+                             VALUES (?, ?, CURRENT_TIMESTAMP)");
+        return $stmt->execute([$courseId, $studentId]);
+    }
+
+    public static function markCourseCompleted($courseId, $studentId) {
+        $db = self::getConnection();
+        $stmt = $db->prepare("UPDATE inscriptions SET completed = 1 
+                             WHERE cours_id = ? AND etudiant_id = ?");
+        return $stmt->execute([$courseId, $studentId]);
+    }
+
+    public static function getAllWithDetails() {
+        $db = self::getConnection();
+        $sql = "SELECT c.*, 
+                       cat.nom as category_name,
+                       u.nom as teacher_name,
+                       COUNT(DISTINCT i.etudiant_id) as student_count
+                FROM cours c
+                LEFT JOIN categories cat ON c.categorie_id = cat.id
+                LEFT JOIN utilisateurs u ON c.enseignant_id = u.id
+                LEFT JOIN inscriptions i ON c.id = i.cours_id
+                GROUP BY c.id, c.titre, c.description, c.contenu, c.image, 
+                         c.categorie_id, c.enseignant_id, c.created_at, c.updated_at,
+                         cat.nom, u.nom
+                ORDER BY c.created_at DESC";
+        return $db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public static function getWithDetails($id) {
+        $db = self::getConnection();
+        $stmt = $db->prepare("SELECT c.*, 
+                                    cat.nom as category_name,
+                                    u.nom as teacher_name,
+                                    COUNT(DISTINCT i.etudiant_id) as student_count
+                             FROM cours c
+                             LEFT JOIN categories cat ON c.categorie_id = cat.id
+                             LEFT JOIN utilisateurs u ON c.enseignant_id = u.id
+                             LEFT JOIN inscriptions i ON c.id = i.cours_id
+                             WHERE c.id = ?
+                             GROUP BY c.id, c.titre, c.description, c.contenu, c.image, 
+                                      c.categorie_id, c.enseignant_id, c.created_at, c.updated_at,
+                                      cat.nom, u.nom");
+        $stmt->execute([$id]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public static function publish($id) {
+        $db = self::getConnection();
+        $stmt = $db->prepare("UPDATE cours SET published = 1 WHERE id = ?");
+        return $stmt->execute([$id]);
+    }
+
+    public static function unpublish($id) {
+        $db = self::getConnection();
+        $stmt = $db->prepare("UPDATE cours SET published = 0 WHERE id = ?");
+        return $stmt->execute([$id]);
+    }
+
+    public static function delete($id) {
+        $db = self::getConnection();
+        $db->beginTransaction();
+        try {
+            // Delete enrollments
+            $stmt = $db->prepare("DELETE FROM inscriptions WHERE cours_id = ?");
+            $stmt->execute([$id]);
+
+            // Delete tag associations
+            $stmt = $db->prepare("DELETE FROM cours_tags WHERE cours_id = ?");
+            $stmt->execute([$id]);
+
+            // Delete the course
+            $stmt = $db->prepare("DELETE FROM cours WHERE id = ?");
+            $stmt->execute([$id]);
+
+            $db->commit();
+            return true;
+        } catch (Exception $e) {
+            $db->rollBack();
+            throw $e;
+        }
+    }
+
     public static function getByTeacher($teacherId) {
         $db = self::getConnection();
         $stmt = $db->prepare("SELECT c.*, cat.nom as categorie_nom,
@@ -95,40 +313,6 @@ class Course extends Model {
                              ORDER BY c.created_at DESC");
         $stmt->execute([$teacherId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-
-    public static function getWithDetails($id) {
-        $db = self::getConnection();
-        try {
-            // Get course basic info
-            $stmt = $db->prepare("SELECT c.*, cat.nom as categorie_nom, u.nom as enseignant_nom,
-                                COUNT(DISTINCT i.etudiant_id) as student_count
-                                FROM cours c 
-                                LEFT JOIN categories cat ON c.categorie_id = cat.id
-                                LEFT JOIN utilisateurs u ON c.enseignant_id = u.id
-                                LEFT JOIN inscriptions i ON c.id = i.cours_id
-                                WHERE c.id = ?
-                                GROUP BY c.id, c.titre, c.description, c.contenu, c.image, 
-                                         c.categorie_id, c.enseignant_id, c.created_at, c.updated_at,
-                                         cat.nom, u.nom");
-            $stmt->execute([$id]);
-            $course = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            if (!$course) {
-                return null;
-            }
-
-            // Get course tags
-            $tagStmt = $db->prepare("SELECT t.* FROM tags t 
-                                   JOIN cours_tags ct ON t.id = ct.tag_id 
-                                   WHERE ct.cours_id = ?");
-            $tagStmt->execute([$id]);
-            $course['tags'] = $tagStmt->fetchAll(PDO::FETCH_ASSOC);
-
-            return $course;
-        } catch (Exception $e) {
-            throw new Exception("Error getting course details: " . $e->getMessage());
-        }
     }
 
     public static function search($query = '', $filters = [], $page = 1, $perPage = 12) {
@@ -222,29 +406,5 @@ class Course extends Model {
             'pages' => ceil($total / $perPage),
             'current_page' => $page
         ];
-    }
-
-    public static function delete($id) {
-        $db = self::getConnection();
-        $db->beginTransaction();
-        try {
-            // Delete course tags
-            $stmt = $db->prepare("DELETE FROM cours_tags WHERE cours_id = ?");
-            $stmt->execute([$id]);
-
-            // Delete course enrollments
-            $stmt = $db->prepare("DELETE FROM inscriptions WHERE cours_id = ?");
-            $stmt->execute([$id]);
-
-            // Delete course
-            $stmt = $db->prepare("DELETE FROM cours WHERE id = ?");
-            $stmt->execute([$id]);
-
-            $db->commit();
-            return true;
-        } catch (Exception $e) {
-            $db->rollBack();
-            throw $e;
-        }
     }
 }
