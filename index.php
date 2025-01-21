@@ -1,72 +1,121 @@
 <?php
-// session_start();
-require_once __DIR__ . '/config/database.php';
-require_once __DIR__ . '/controllers/UtilisateurController.php';
-require_once __DIR__ . '/controllers/CourseController.php';
+session_start();
+require_once __DIR__ . '/controllers/AuthController.php';
+require_once __DIR__ . '/controllers/AdminController.php';
 require_once __DIR__ . '/controllers/EnseignantController.php';
-// require_once __DIR__ . '/controllers/EnseignantController.php';
-// require_once __DIR__ . '/controllers/EtudiantController.php';
-// require_once __DIR__ . '/controllers/AdminController.php';
-
-
-$db = DatabaseConnection::getInstance();
-$user = new UtilisateurController($db);
-$courseController = new CourseController($db);
-$enseignantController = new EnseignantController($db);
-// $etudiantController = new EtudiantController($db);
-// $adminController = new AdminController($db);
-
-
-
+require_once __DIR__ . '/controllers/EtudiantController.php';
+require_once __DIR__ . '/controllers/CourseController.php';
 
 $action = isset($_GET['action']) ? $_GET['action'] : 'home';
+$page = isset($_GET['page']) ? $_GET['page'] : null;
+
+// Initialize controllers
+$authController = new AuthController();
+$courseController = new CourseController();
 
 switch ($action) {
-    case 'home':
-        require_once  'views/index.php';
+    // Auth routes
+    case 'login':
+        $authController->login();
         break;
-    case 'loginPage':
-        require_once 'views/login.php';
+    case 'register':
+        $authController->register();
         break;
-    case 'registerPage':
-        require_once 'views/register.php';
+    case 'logout':
+        $authController->logout();
         break;
-    case 'profile':
-        require_once 'views/profile.php';
+
+    // Admin routes
+    case 'admin':
+        if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
+            $_SESSION['error'] = "Access denied. Admin privileges required.";
+            header('Location: index.php?action=login');
+            exit;
+        }
+        $adminController = new AdminController();
+        switch ($page) {
+            case 'users':
+                $adminController->gererUtilisateurs();
+                break;
+            case 'categories':
+                $adminController->gererCategories();
+                break;
+            case 'tags':
+                $adminController->gererTags();
+                break;
+            default:
+                $adminController->index();
+                break;
+        }
         break;
-    case 'myCourses':
-        $courseController->getMyCourses();
+
+    // Teacher routes
+    case 'enseignant':
+        if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'enseignant') {
+            $_SESSION['error'] = "Access denied. Teacher privileges required.";
+            header('Location: index.php?action=login');
+            exit;
+        }
+        $enseignantController = new EnseignantController();
+        switch ($page) {
+            case 'courses':
+                $enseignantController->gererCours();
+                break;
+            case 'add-course':
+                $enseignantController->ajouterCours();
+                break;
+            case 'edit-course':
+                $enseignantController->modifierCours();
+                break;
+            default:
+                $enseignantController->index();
+                break;
+        }
         break;
-    case 'inscrireCours':
-        $user_id = isset($_GET['user_id']) ? $_GET['user_id'] : null;
-        $cours_id = isset($_GET['cours_id']) ? $_GET['cours_id'] : null;
-        $courseController->inscrireCours($user_id, $cours_id);
+
+    // Student routes
+    case 'etudiant':
+        if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'etudiant') {
+            $_SESSION['error'] = "Access denied. Student privileges required.";
+            header('Location: index.php?action=login');
+            exit;
+        }
+        $etudiantController = new EtudiantController();
+        switch ($page) {
+            case 'courses':
+                $courseController->getAll();
+                break;
+            case 'course':
+                $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+                $courseController->view($id);
+                break;
+            case 'enroll':
+                $courseId = isset($_GET['course']) ? (int)$_GET['course'] : 0;
+                $courseController->enroll($courseId);
+                break;
+            case 'enrolled':
+                $courseController->myEnrollments();
+                break;
+            case 'complete':
+                $courseId = isset($_GET['course']) ? (int)$_GET['course'] : 0;
+                $courseController->markCompleted($courseId);
+                break;
+            default:
+                $etudiantController->index();
+                break;
+        }
         break;
-    case 'teacherDashboard':
-        require_once 'views/teacher_Dashboard.php';
-        break;
-    case 'adminDashboard':
-        require_once 'views/admin_Dashboard.php';
-        break;
+
+    // Public routes
     case 'courses':
         $courseController->getAll();
         break;
-    case 'search':
-        $courseController->handleSearch();
+    case 'course':
+        $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+        $courseController->view($id);
         break;
-    case 'login':
-        $user->login();
-        break;
-    case 'logout':
-        $user->logout();
-        break;
-    case 'register':
-        $user->register();
-        break;
-    
+    case 'home':
     default:
-        require_once 'views/404.php';
+        require_once __DIR__ . '/views/home.php';
         break;
 }
-
-?>

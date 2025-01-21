@@ -1,144 +1,141 @@
 <?php
 require_once __DIR__ . '/../models/Utilisateur.php';
+require_once __DIR__ . '/../models/Etudiant.php';
+require_once __DIR__ . '/../models/Enseignant.php';
+require_once __DIR__ . '/../models/Administrateur.php';
 
-class UtilisateurController
-{
+class UtilisateurController {
     private $db;
-    private $user;
-    private $email;
-    private $password;
 
-    public function __construct($db)
-    {
+    public function __construct($db) {
         $this->db = $db;
-        $this->user = new User($this->db);
     }
 
-
-    public function login()
-    {
+    public function login() {
+        $error = '';
+        
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $this->email = filter_var(trim($_POST['email']), FILTER_SANITIZE_EMAIL);
-            $this->password = trim($_POST['password']);
+            $email = $_POST['email'] ?? '';
+            $password = $_POST['password'] ?? '';
 
-            if (empty($this->email) || empty($this->password)) {
-                $error = "Both email and password are required.";
+            if (empty($email) || empty($password)) {
+                $error = "All fields are required.";
             } else {
-                $user = $this->user->login($this->email, $this->password);
-                if ($user) {
-                    session_start();
-                    $userRole = $user['role'];
-                    switch ($userRole) {
-                        case 'etudiant':
-                            $_SESSION['name'] = $user['nom'];
-                            $_SESSION['role'] = $user['role'];
-                            $_SESSION['user_id'] = $user['id'];
+                try {
+                    // First get the user's role
+                    $query = "SELECT role FROM utilisateurs WHERE email = ?";
+                    $stmt = $this->db->prepare($query);
+                    $stmt->execute([$email]);
+                    $role = $stmt->fetchColumn();
+
+                    if ($role) {
+                        // Create the appropriate user type based on role
+                        switch ($role) {
+                            case 'etudiant':
+                                $utilisateur = new Etudiant($this->db);
+                                break;
+                            case 'enseignant':
+                                $utilisateur = new Enseignant($this->db);
+                                break;
+                            case 'administrateur':
+                                $utilisateur = new Administrateur($this->db);
+                                break;
+                            default:
+                                throw new Exception('Invalid role');
+                        }
+
+                        // Set credentials and attempt login
+                        $utilisateur->setEmail($email);
+                        $utilisateur->setMotDePasse($password);
+                        
+                        if ($utilisateur->connecter()) {
+                            session_start();
+                            $_SESSION['user_id'] = $utilisateur->getId();
+                            $_SESSION['role'] = $utilisateur->getRole();
+                            $_SESSION['name'] = $utilisateur->getNom();
+                            $_SESSION['email'] = $utilisateur->getEmail();
+                            
                             header('Location: index.php?action=home');
                             exit;
-                            break;
-                        case 'enseignant':
-                            $_SESSION['name'] = $user['nom'];
-                            $_SESSION['role'] = $user['role'];
-                            $_SESSION['user_id'] = $user['id'];
-                            header('Location: index.php?action=home');
-                            exit;
-                            break;
-                        case 'administrateur':
-                            $_SESSION['name'] = $user['nom'];
-                            $_SESSION['role'] = $user['role'];
-                            $_SESSION['user_id'] = $user['id'];
-                            header('Location: index.php?action=home');
-                            exit;
-                            break;
-                        default:
+                        } else {
                             $error = "Invalid email or password.";
-                            break;
+                        }
+                    } else {
+                        $error = "User not found.";
                     }
-                } else {
-                    $error = "Invalid email or password.";
+                } catch (Exception $e) {
+                    error_log($e->getMessage());
+                    $error = "An error occurred during login. Please try again.";
                 }
             }
         }
-        require_once 'views/login.php';
+        
+        require_once __DIR__ . '/../views/login.php';
     }
 
-
-    public function logout()
-    {
-        $_SESSION = array();
-        if (ini_get("session.use_cookies")) {
-            $params = session_get_cookie_params();
-            setcookie(
-                session_name(),
-                '',
-                time() - 42000,
-                $params["path"],
-                $params["domain"],
-                $params["secure"],
-                $params["httponly"]
-            );
-        }
-        session_destroy();
-        header("Location: index.php?action=home");
-        exit();
-    }
-
-    public function register()
-    {
+    public function register() {
+        $error = '';
+        
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $nom = trim($_POST['name']);
-            $email = filter_var(trim($_POST['email']), FILTER_SANITIZE_EMAIL);
-            $password = trim($_POST['password']);
-            $confirm_password = trim($_POST['confirm_password']);
-            $role = trim($_POST['role']);
+            $nom = $_POST['nom'] ?? '';
+            $email = $_POST['email'] ?? '';
+            $password = $_POST['password'] ?? '';
+            $confirm_password = $_POST['confirm_password'] ?? '';
+            $role = $_POST['role'] ?? '';
 
             if ($password !== $confirm_password) {
                 $error = "Passwords do not match.";
-            }
-
-            if (empty($nom) || empty($email) || empty($password) || empty($role) || empty($confirm_password)) {
+            } else if (empty($nom) || empty($email) || empty($password) || empty($role)) {
                 $error = "All fields are required.";
             } else {
-                $userId = $this->user->register($nom, $email, $password, $role);
-                if ($userId) {
-                    $user = $this->user->login($email, $password);
-
-                    if ($user) {
-                        session_start();
-                        $userRole = $user['role'];
-                        switch ($userRole) {
+                try {
+                    $userId = Utilisateur::sEnregistrer($this->db, $nom, $email, $password, $role);
+                    if ($userId) {
+                        // Create appropriate user type based on role
+                        switch ($role) {
                             case 'etudiant':
-                                $_SESSION['name'] = $user['nom'];
-                                $_SESSION['role'] = $user['role'];
-                                $_SESSION['user_id'] = $user['id'];
-                                header('Location: index.php?action=home');
-                                exit;
+                                $utilisateur = new Etudiant($this->db);
                                 break;
                             case 'enseignant':
-                                $_SESSION['name'] = $user['nom'];
-                                $_SESSION['role'] = $user['role'];
-                                $_SESSION['user_id'] = $user['id'];
-                                header('Location: index.php?action=home');
-                                exit;
+                                $utilisateur = new Enseignant($this->db);
                                 break;
                             case 'administrateur':
-                                $_SESSION['name'] = $user['nom'];
-                                $_SESSION['role'] = $user['role'];
-                                $_SESSION['user_id'] = $user['id'];
-                                header('Location: index.php?action=home');
-                                exit;
+                                $utilisateur = new Administrateur($this->db);
                                 break;
                             default:
-                                $error = "Invalid email or password.";
-                                break;
+                                throw new Exception('Invalid role');
                         }
-                    } else {
-                        $error = "Invalid email or password.";
+                        
+                        // Set credentials and attempt login
+                        $utilisateur->setEmail($email);
+                        $utilisateur->setMotDePasse($password);
+                        
+                        if ($utilisateur->connecter()) {
+                            session_start();
+                            $_SESSION['user_id'] = $utilisateur->getId();
+                            $_SESSION['role'] = $utilisateur->getRole();
+                            $_SESSION['name'] = $utilisateur->getNom();
+                            $_SESSION['email'] = $utilisateur->getEmail();
+                            
+                            header('Location: index.php?action=home');
+                            exit;
+                        }
                     }
+                } catch (Exception $e) {
+                    error_log($e->getMessage());
+                    $error = "Registration failed. Please try again.";
                 }
             }
         }
-        require './views/register.php';
+        
+        require_once __DIR__ . '/../views/register.php';
+    }
+
+    public function logout() {
+        session_start();
+        session_destroy();
+        header('Location: index.php?action=home');
+        exit;
     }
 
     public function getRole()

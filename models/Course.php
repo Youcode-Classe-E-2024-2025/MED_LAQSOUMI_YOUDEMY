@@ -1,145 +1,194 @@
 <?php
+require_once 'Model.php';
 
-require_once __DIR__ . '/../config/database.php';
+class Course extends Model {
+    protected static $table = 'cours';
 
-class Course {
-    private $db;
-    private $id;
-    private $titre;
-    private $description;
-    private $contenu;
-    private $enseignant_id;
-    private $categorie_id;
-    private $image;
-    private $tagid = null;
+    public static function create($data) {
+        $db = self::getConnection();
+        $stmt = $db->prepare("INSERT INTO cours (titre, description, contenu, categorie_id, enseignant_id) VALUES (?, ?, ?, ?, ?)");
+        $db->beginTransaction();
+        try {
+            $stmt->execute([
+                $data['titre'],
+                $data['description'],
+                $data['contenu'],
+                $data['categorie_id'],
+                $data['enseignant_id']
+            ]);
+            $courseId = $db->lastInsertId();
 
-    public function __construct($db) {
-        $db = DatabaseConnection::getInstance();
-        $this->db = $db->getConnection();
-        $this->id = null;
-        $this->titre = '';
-        $this->description = '';
-        $this->contenu = '';
-        $this->enseignant_id = null;
-        $this->categorie_id = null;
-        $this->image = '';
-        $this->tagid = null;
-    }
-
-    // public function afficherDetails() {
-    //     $query = "SELECT c.*, u.nom as teacher_name, cat.nom as category_name 
-    //               FROM cours c
-    //               JOIN utilisateurs u ON c.enseignant_id = u.id
-    //               JOIN categories cat ON c.categorie_id = cat.id
-    //               WHERE c.id = ?";
-    //     $stmt = $this->db->prepare($query);
-    //     $stmt->bindParam(':id', $this->id, PDO::PARAM_INT);
-    //     $stmt->execute();
-    //     return $stmt->fetch(PDO::FETCH_ASSOC);
-    // }
-
-
-    public function getCourseById($id) {
-        $query = "SELECT c.*, u.nom as teacher_name, cat.nom as category_name 
-                  FROM cours c
-                  JOIN utilisateurs u ON c.enseignant_id = u.id
-                  JOIN categories cat ON c.categorie_id = cat.id
-                  WHERE c.id = ?";
-        $stmt = $this->db->prepare($query);
-        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
-        $stmt->execute();
-        return $stmt->fetch(PDO::FETCH_ASSOC);
-    }
-
-
-
-    public function getAll($page = 1, $limit = 12) {
-        $offset = ($page - 1) * $limit;
-        $query = "SELECT c.*, u.nom as teacher_name, cat.nom as category_name 
-                  FROM cours c
-                  JOIN utilisateurs u ON c.enseignant_id = u.id
-                  JOIN categories cat ON c.categorie_id = cat.id
-                  LIMIT :limit OFFSET :offset";
-        $stmt = $this->db->prepare($query);
-        $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
-        $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-    
-
-    public function getTotalCourses() {
-        $query = "SELECT COUNT(*) FROM cours";
-        $stmt = $this->db->prepare($query);
-        $stmt->execute();
-        return $stmt->fetchColumn();
-    }
-
-
-    public function getCoursesByKeyword($keyword, $page = 1, $limit = 12) {
-        $offset = ($page - 1) * $limit;
-        $query = "SELECT c.*, u.nom as teacher_name, cat.nom as category_name 
-              FROM cours c
-              JOIN utilisateurs u ON c.enseignant_id = u.id
-              JOIN categories cat ON c.categorie_id = cat.id
-              WHERE c.titre LIKE :keyword OR 
-                    c.description LIKE :keyword OR
-                    c.contenu LIKE :keyword OR
-                    u.nom LIKE :keyword OR
-                    cat.nom LIKE :keyword
-              LIMIT :limit OFFSET :offset";
-    
-        $stmt = $this->db->prepare($query);
-        $stmt->bindValue(':keyword', '%' . $keyword . '%', PDO::PARAM_STR);
-        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
-        $stmt->execute();
-
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-
-    public function getTotalCoursesByKeyword($keyword) {
-        $query = "SELECT COUNT(*) FROM cours c
-              JOIN utilisateurs u ON c.enseignant_id = u.id
-              JOIN categories cat ON c.categorie_id = cat.id
-              WHERE c.titre LIKE :keyword OR 
-                    c.description LIKE :keyword OR
-                    c.contenu LIKE :keyword OR
-                    u.nom LIKE :keyword OR
-                    cat.nom LIKE :keyword";
-    
-        $stmt = $this->db->prepare($query);
-        $stmt->bindValue(':keyword', '%' . $keyword . '%', PDO::PARAM_STR);
-        $stmt->execute();
-
-        return $stmt->fetchColumn();
-    }
-
-    public function getMyCourses($user_id) {
-        if (empty($user_id) || !is_numeric($user_id)) {
-            throw new Exception('Invalid user ID.');
+            // Add tags if present
+            if (!empty($data['tags'])) {
+                $tagStmt = $db->prepare("INSERT INTO cours_tags (cours_id, tag_id) VALUES (?, ?)");
+                foreach ($data['tags'] as $tagId) {
+                    $tagStmt->execute([$courseId, $tagId]);
+                }
+            }
+            
+            $db->commit();
+            return $courseId;
+        } catch (Exception $e) {
+            $db->rollBack();
+            throw $e;
         }
-        $query = "SELECT c.*, u.nom as teacher_name, cat.nom as category_name, i.etudiant_id as inscrit
-                  FROM inscriptions i 
-                  JOIN cours c ON i.cours_id = c.id
-                  JOIN utilisateurs u ON c.enseignant_id = u.id
-                  JOIN categories cat ON c.categorie_id = cat.id
-                  WHERE i.etudiant_id = :user_id";
-        
-        $stmt = $this->db->prepare($query);
-        $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
-        $stmt->execute();
+    }
+
+    public static function update($id, $data) {
+        $db = self::getConnection();
+        $stmt = $db->prepare("UPDATE cours SET titre = ?, description = ?, contenu = ?, categorie_id = ? WHERE id = ?");
+        $db->beginTransaction();
+        try {
+            $stmt->execute([
+                $data['titre'],
+                $data['description'],
+                $data['contenu'],
+                $data['categorie_id'],
+                $id
+            ]);
+
+            // Update tags
+            if (isset($data['tags'])) {
+                // Remove old tags
+                $deleteStmt = $db->prepare("DELETE FROM cours_tags WHERE cours_id = ?");
+                $deleteStmt->execute([$id]);
+
+                // Add new tags
+                $tagStmt = $db->prepare("INSERT INTO cours_tags (cours_id, tag_id) VALUES (?, ?)");
+                foreach ($data['tags'] as $tagId) {
+                    $tagStmt->execute([$id, $tagId]);
+                }
+            }
+
+            $db->commit();
+            return true;
+        } catch (Exception $e) {
+            $db->rollBack();
+            throw $e;
+        }
+    }
+
+    public static function getByTeacher($teacherId) {
+        $db = self::getConnection();
+        $stmt = $db->prepare("SELECT c.*, cat.nom as categorie_nom FROM cours c 
+                             JOIN categories cat ON c.categorie_id = cat.id 
+                             WHERE c.enseignant_id = ?");
+        $stmt->execute([$teacherId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function inscrireCours($user_id, $cours_id) {
-        if (empty($user_id) || !is_numeric($user_id)) {
-            throw new Exception('Invalid user ID.');
+    public static function getWithDetails($id) {
+        $db = self::getConnection();
+        try {
+            // Get course basic info
+            $stmt = $db->prepare("SELECT c.*, cat.nom as categorie_nom, u.nom as enseignant_nom,
+                                (SELECT COUNT(*) FROM inscriptions WHERE cours_id = c.id) as nombre_inscrits
+                                FROM cours c 
+                                JOIN categories cat ON c.categorie_id = cat.id
+                                JOIN utilisateurs u ON c.enseignant_id = u.id
+                                WHERE c.id = ?");
+            $stmt->execute([$id]);
+            $course = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$course) {
+                return null;
+            }
+
+            // Get course tags
+            $tagStmt = $db->prepare("SELECT t.* FROM tags t 
+                                   JOIN cours_tags ct ON t.id = ct.tag_id 
+                                   WHERE ct.cours_id = ?");
+            $tagStmt->execute([$id]);
+            $course['tags'] = $tagStmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Get course sections and lessons
+            $sectionStmt = $db->prepare("SELECT * FROM sections WHERE cours_id = ? ORDER BY ordre");
+            $sectionStmt->execute([$id]);
+            $course['sections'] = $sectionStmt->fetchAll(PDO::FETCH_ASSOC);
+
+            foreach ($course['sections'] as &$section) {
+                $lessonStmt = $db->prepare("SELECT * FROM lecons WHERE section_id = ? ORDER BY ordre");
+                $lessonStmt->execute([$section['id']]);
+                $section['lessons'] = $lessonStmt->fetchAll(PDO::FETCH_ASSOC);
+            }
+
+            // Get other courses by the same teacher
+            $otherCoursesStmt = $db->prepare("SELECT c.id, c.titre, cat.nom as categorie_nom,
+                                            (SELECT COUNT(*) FROM inscriptions WHERE cours_id = c.id) as nombre_inscrits
+                                            FROM cours c 
+                                            JOIN categories cat ON c.categorie_id = cat.id
+                                            WHERE c.enseignant_id = ? AND c.id != ?
+                                            LIMIT 5");
+            $otherCoursesStmt->execute([$course['enseignant_id'], $id]);
+            $course['autres_cours'] = $otherCoursesStmt->fetchAll(PDO::FETCH_ASSOC);
+
+            return $course;
+        } catch (Exception $e) {
+            throw new Exception("Failed to fetch course details: " . $e->getMessage());
         }
-        $query = "INSERT INTO inscriptions (etudiant_id, cours_id) VALUES (:user_id, :cours_id)";
-        $stmt = $this->db->prepare($query);
-        $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
-        $stmt->bindParam(':cours_id', $cours_id, PDO::PARAM_INT);
-        return $stmt->execute();
+    }
+
+    public static function search($filters = [], $page = 1, $perPage = 12) {
+        $db = self::getConnection();
+        try {
+            $conditions = [];
+            $params = [];
+            $query = "SELECT c.*, cat.nom as categorie_nom, u.nom as enseignant_nom,
+                     (SELECT COUNT(*) FROM inscriptions WHERE cours_id = c.id) as nombre_inscrits
+                     FROM cours c 
+                     JOIN categories cat ON c.categorie_id = cat.id
+                     JOIN utilisateurs u ON c.enseignant_id = u.id";
+
+            if (!empty($filters['search'])) {
+                $conditions[] = "(c.titre LIKE ? OR c.description LIKE ?)";
+                $searchTerm = "%{$filters['search']}%";
+                $params[] = $searchTerm;
+                $params[] = $searchTerm;
+            }
+
+            if (!empty($filters['category'])) {
+                $conditions[] = "c.categorie_id = ?";
+                $params[] = $filters['category'];
+            }
+
+            if (!empty($conditions)) {
+                $query .= " WHERE " . implode(" AND ", $conditions);
+            }
+
+            if (!empty($filters['sort'])) {
+                switch ($filters['sort']) {
+                    case 'popular':
+                        $query .= " ORDER BY nombre_inscrits DESC";
+                        break;
+                    case 'recent':
+                    default:
+                        $query .= " ORDER BY c.created_at DESC";
+                        break;
+                }
+            }
+
+            // Add pagination
+            $offset = ($page - 1) * $perPage;
+            $query .= " LIMIT ? OFFSET ?";
+            $params[] = $perPage;
+            $params[] = $offset;
+
+            $stmt = $db->prepare($query);
+            $stmt->execute($params);
+            $courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Get tags for each course
+            foreach ($courses as &$course) {
+                $tagStmt = $db->prepare("SELECT t.* FROM tags t 
+                                       JOIN cours_tags ct ON t.id = ct.tag_id 
+                                       WHERE ct.cours_id = ?");
+                $tagStmt->execute([$course['id']]);
+                $course['tags'] = $tagStmt->fetchAll(PDO::FETCH_ASSOC);
+            }
+
+            return $courses;
+        } catch (Exception $e) {
+            throw new Exception("Failed to fetch courses: " . $e->getMessage());
+        }
     }
 }
