@@ -118,33 +118,78 @@ class EnseignantController {
             exit;
         }
 
-        $coursId = isset($_GET['id']) ? (int)$_GET['id'] : null;
+        // Get course ID from POST for form submission, otherwise from GET for displaying form
+        $coursId = $_SERVER['REQUEST_METHOD'] === 'POST' ? 
+                  (isset($_POST['id']) ? (int)$_POST['id'] : null) : 
+                  (isset($_GET['id']) ? (int)$_GET['id'] : null);
+
+        error_log("Modifying course ID: " . $coursId);
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $titre = $_POST['titre'] ?? '';
             $description = $_POST['description'] ?? '';
             $contenu = $_POST['contenu'] ?? '';
+            $image = $_POST['image'] ?? 'https://placehold.co/300';
             $categorieId = $_POST['categorie_id'] ?? null;
 
-            $result = $this->course->updateCourse($coursId, [
-                'titre' => $titre,
-                'description' => $description,
-                'contenu' => $contenu,
-                'categorie_id' => $categorieId
-            ]);
+            error_log("POST data received: " . json_encode($_POST));
 
-            if ($result) {
-                $_SESSION['success'] = "Cours modifié avec succès";
-            } else {
-                $_SESSION['error'] = "Erreur lors de la modification du cours";
+            try {
+                // Verify course ownership
+                $existingCourse = $this->course->getCourseById($coursId);
+                if (!$existingCourse || $existingCourse['enseignant_id'] != $_SESSION['user_id']) {
+                    throw new Exception("Unauthorized access to course");
+                }
+
+                if (empty($titre) || empty($description) || empty($contenu) || empty($categorieId)) {
+                    throw new Exception("All fields are required");
+                }
+
+                $result = $this->course->updateCourse($coursId, [
+                    'titre' => $titre,
+                    'description' => $description,
+                    'contenu' => $contenu,
+                    'image' => $image,
+                    'categorie_id' => $categorieId
+                ]);
+
+                if ($result) {
+                    $_SESSION['success'] = "Course updated successfully";
+                } else {
+                    throw new Exception("Failed to update course");
+                }
+                
+            } catch (Exception $e) {
+                error_log("Error in modifierCours: " . $e->getMessage());
+                $_SESSION['error'] = $e->getMessage();
+                header('Location: index.php?action=modifierCours&id=' . $coursId);
+                exit;
             }
+
             header('Location: index.php?action=teacherDashboard');
             exit;
         }
 
-        $course = $this->course->getCourseById($coursId);
-        $categories = (new Category($this->db))->getAllCategories();
-        require_once __DIR__ . '/../views/edit_course.php';
+        try {
+            // Get course details for displaying the form
+            $course = $this->course->getCourseById($coursId);
+            
+            // Verify course ownership
+            if (!$course || $course['enseignant_id'] != $_SESSION['user_id']) {
+                $_SESSION['error'] = "You don't have permission to edit this course";
+                header('Location: index.php?action=teacherDashboard');
+                exit;
+            }
+            
+            $categories = (new Category($this->db))->getAllCategories();
+            require_once __DIR__ . '/../views/edit_course.php';
+            
+        } catch (Exception $e) {
+            error_log("Error loading course: " . $e->getMessage());
+            $_SESSION['error'] = "Error loading course";
+            header('Location: index.php?action=teacherDashboard');
+            exit;
+        }
     }
 
     public function supprimerCours() {
@@ -175,9 +220,27 @@ class EnseignantController {
         }
 
         $coursId = isset($_GET['id']) ? (int)$_GET['id'] : null;
-        $inscriptions = $this->enseignant->getTeacherEnrollments($_SESSION['user_id']);
-        $course = $coursId ? $this->course->getCourseById($coursId) : null;
         
-        require_once __DIR__ . '/../views/course_enrollments.php';
+        try {
+            // Get course details
+            $course = $this->course->getCourseById($coursId);
+            
+            // Verify course ownership
+            if (!$course || $course['enseignant_id'] != $_SESSION['user_id']) {
+                $_SESSION['error'] = "Vous n'avez pas accès à ce cours";
+                header('Location: index.php?action=teacherDashboard');
+                exit;
+            }
+            
+            // Get enrollments
+            $enrollments = $this->enseignant->getEnrollments($coursId);
+            
+            require_once __DIR__ . '/../views/course_enrollments.php';
+        } catch (Exception $e) {
+            error_log("Error loading enrollments: " . $e->getMessage());
+            $_SESSION['error'] = "Erreur lors du chargement des inscriptions";
+            header('Location: index.php?action=teacherDashboard');
+            exit;
+        }
     }
 }

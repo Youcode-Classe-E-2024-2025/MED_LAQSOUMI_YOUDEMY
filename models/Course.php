@@ -52,16 +52,39 @@ class Course {
 
     public function getCourseById($id) {
         try {
-            $query = "SELECT c.*, u.nom as teacher_name, cat.nom as category_name 
+            if (!$id || !is_numeric($id)) {
+                error_log("Invalid course ID: " . var_export($id, true));
+                return null;
+            }
+
+            $query = "SELECT c.*, cat.nom as category_name 
                     FROM cours c
-                    JOIN utilisateurs u ON c.enseignant_id = u.id
-                    JOIN categories cat ON c.categorie_id = cat.id
-                    WHERE c.id = ?";
+                    LEFT JOIN categories cat ON c.categorie_id = cat.id
+                    WHERE c.id = :id";
+            
             $stmt = $this->db->prepare($query);
-            $stmt->execute([$id]);
-            return $stmt->fetch(PDO::FETCH_ASSOC);
+            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+            
+            if (!$stmt->execute()) {
+                error_log("Failed to execute getCourseById query");
+                return null;
+            }
+            
+            $course = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$course) {
+                error_log("No course found with ID: " . $id);
+                return null;
+            }
+            
+            error_log("Retrieved course data: " . json_encode($course));
+            return $course;
+            
         } catch (PDOException $e) {
-            error_log($e->getMessage());
+            error_log("Database error in getCourseById: " . $e->getMessage());
+            return null;
+        } catch (Exception $e) {
+            error_log("General error in getCourseById: " . $e->getMessage());
             return null;
         }
     }
@@ -270,58 +293,65 @@ class Course {
 
     public function updateCourse($courseId, $data) {
         try {
-            $this->db->beginTransaction();
+            // Debug log
+            error_log("Updating course ID: " . $courseId . " with data: " . json_encode($data));
 
-            // Update course
+            // Validate inputs
+            if (!$courseId || !is_numeric($courseId)) {
+                error_log("Invalid course ID: " . var_export($courseId, true));
+                return false;
+            }
+
             $query = "UPDATE cours 
                      SET titre = :titre, 
                          description = :description, 
                          contenu = :contenu, 
                          categorie_id = :categorie_id, 
                          image = :image
-                     WHERE id = :id AND enseignant_id = :enseignant_id";
+                     WHERE id = :id";
             
             $stmt = $this->db->prepare($query);
-            $stmt->bindParam(':titre', $data['titre'], PDO::PARAM_STR);
-            $stmt->bindParam(':description', $data['description'], PDO::PARAM_STR);
-            $stmt->bindParam(':contenu', $data['contenu'], PDO::PARAM_STR);
-            $stmt->bindParam(':categorie_id', $data['categorie_id'], PDO::PARAM_INT);
-            $stmt->bindParam(':image', $data['image'], PDO::PARAM_STR);
-            $stmt->bindParam(':id', $courseId, PDO::PARAM_INT);
-            $stmt->bindParam(':enseignant_id', $data['enseignant_id'], PDO::PARAM_INT);
             
-            if (!$stmt->execute()) {
-                throw new Exception('Failed to update course');
+            // Bind parameters
+            $params = [
+                ':titre' => $data['titre'],
+                ':description' => $data['description'],
+                ':contenu' => $data['contenu'],
+                ':categorie_id' => $data['categorie_id'],
+                ':image' => $data['image'] ?? 'https://placehold.co/300',
+                ':id' => $courseId
+            ];
+            
+            // Debug log
+            error_log("SQL Query: " . $query);
+            error_log("Parameters: " . json_encode($params));
+            
+            foreach ($params as $key => &$value) {
+                $stmt->bindParam($key, $value);
             }
-
-            // Update tags
-            if (isset($data['tags'])) {
-                // Remove existing tags
-                $deleteTagsQuery = "DELETE FROM cours_tags WHERE cours_id = :cours_id";
-                $deleteStmt = $this->db->prepare($deleteTagsQuery);
-                $deleteStmt->bindParam(':cours_id', $courseId, PDO::PARAM_INT);
-                $deleteStmt->execute();
-
-                // Add new tags
-                if (!empty($data['tags'])) {
-                    $tagQuery = "INSERT INTO cours_tags (cours_id, tag_id) VALUES (:cours_id, :tag_id)";
-                    $tagStmt = $this->db->prepare($tagQuery);
-                    
-                    foreach ($data['tags'] as $tagId) {
-                        $tagStmt->bindParam(':cours_id', $courseId, PDO::PARAM_INT);
-                        $tagStmt->bindParam(':tag_id', $tagId, PDO::PARAM_INT);
-                        if (!$tagStmt->execute()) {
-                            throw new Exception('Failed to update course tags');
-                        }
-                    }
-                }
+            
+            $result = $stmt->execute();
+            
+            if (!$result) {
+                error_log("Failed to update course. PDO Error: " . json_encode($stmt->errorInfo()));
+                return false;
             }
-
-            $this->db->commit();
+            
+            // Check if any rows were affected
+            if ($stmt->rowCount() === 0) {
+                error_log("No rows were updated for course ID: " . $courseId);
+                return false;
+            }
+            
+            error_log("Successfully updated course ID: " . $courseId);
             return true;
+            
+        } catch (PDOException $e) {
+            error_log("Database error in updateCourse: " . $e->getMessage());
+            return false;
         } catch (Exception $e) {
-            $this->db->rollBack();
-            throw $e;
+            error_log("General error in updateCourse: " . $e->getMessage());
+            return false;
         }
     }
 

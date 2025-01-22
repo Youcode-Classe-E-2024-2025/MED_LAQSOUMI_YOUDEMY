@@ -196,4 +196,25 @@ class Enseignant extends Utilisateur {
             return 0;
         }
     }
+
+    public function getEnrollments($courseId) {
+        try {
+            $query = "
+                SELECT i.*, u.nom, u.email, i.created_at
+                FROM inscriptions i
+                JOIN utilisateurs u ON i.etudiant_id = u.id
+                WHERE i.cours_id = :course_id
+                ORDER BY i.created_at DESC
+            ";
+            
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(':course_id', $courseId, PDO::PARAM_INT);
+            $stmt->execute();
+            
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Error getting enrollments: " . $e->getMessage());
+            return [];
+        }
+    }
 }
