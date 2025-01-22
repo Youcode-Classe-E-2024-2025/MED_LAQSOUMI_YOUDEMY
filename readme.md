@@ -14,6 +14,10 @@ YOUDEMY is a web-based learning platform project that aims to provide educationa
 - JavaScript
 - XAMPP (Apache, MySQL)
 
+## USE CASE
+
+- https://lucid.app/lucidchart/c9198961-5a40-45ba-831f-7cf856143463/edit?viewport_loc=-418%2C61%2C3080%2C1345%2C0_0&invitationId=inv_cfeaa465-a69e-45f3-80c0-d21fd9777525
+
 ## Installation
 1. Clone the repository
 2. Place the project in your XAMPP's htdocs directory
