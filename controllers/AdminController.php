@@ -1,12 +1,12 @@
 <?php
 class AdminController {
-    private $adminModel;
+    private $administrateur;
     private $db;
 
     public function __construct($db) {
         require_once 'models/Administrateur.php';
         $this->db = $db;
-        $this->adminModel = new Administrateur($db);
+        $this->administrateur = new Administrateur($db);
     }
 
     public function adminDashboard() {
@@ -16,37 +16,44 @@ class AdminController {
             exit();
         }
 
-        $data = [];
+        if (!isset($_GET['section'])) {
+            $data = $this->getDashboardData();
+            extract($data);
+            require_once 'views/admin_dashboard.php';
+        } elseif ($_GET['section'] == 'users') {
+            $data = [];
 
-        // Get dashboard statistics
-        $data['totalUsers'] = $this->adminModel->getTotalUsers();
-        $data['totalCourses'] = $this->adminModel->getTotalCourses();
-        $data['pendingTeachers'] = $this->adminModel->getPendingTeachersCount();
-        $data['totalTags'] = $this->adminModel->getTotalTags();
+            // Get users list for the users section
+            $data['users'] = $this->administrateur->getAllUsers();
 
-        // Get recent activities
-        $data['recentActivities'] = $this->adminModel->getRecentActivities();
+            // Extract data to make variables available in view
+            extract($data);
 
-        // Get users list for the users section
-        if (isset($_GET['section']) && $_GET['section'] == 'users') {
-            $data['users'] = $this->adminModel->getAllUsers();
+            // Load the view
+            require_once 'views/admin_dashboard.php';
+        } elseif ($_GET['section'] == 'courses') {
+            $data = [];
+
+            // Get courses list for the courses section
+            $data['courses'] = $this->administrateur->getAllCourses();
+
+            // Extract data to make variables available in view
+            extract($data);
+
+            // Load the view
+            require_once 'views/admin_dashboard.php';
+        } elseif ($_GET['section'] == 'tags') {
+            $data = [];
+
+            // Get tags list for the tags section
+            $data['tags'] = $this->administrateur->getAllTagsList();
+
+            // Extract data to make variables available in view
+            extract($data);
+
+            // Load the view
+            require_once 'views/admin_dashboard.php';
         }
-
-        // Get courses list for the courses section
-        if (isset($_GET['section']) && $_GET['section'] == 'courses') {
-            $data['courses'] = $this->adminModel->getAllCourses();
-        }
-
-        // Get tags list for the tags section
-        if (isset($_GET['section']) && $_GET['section'] == 'tags') {
-            $data['tags'] = $this->adminModel->getAllTagsList();
-        }
-
-        // Extract data to make variables available in view
-        extract($data);
-
-        // Load the view
-        require_once 'views/admin_dashboard.php';
     }
 
     public function validateTeacher() {
@@ -57,7 +64,7 @@ class AdminController {
 
         if (isset($_GET['id'])) {
             $teacherId = $_GET['id'];
-            if ($this->adminModel->validateTeacher($teacherId)) {
+            if ($this->administrateur->validateTeacher($teacherId)) {
                 $_SESSION['message'] = "Teacher account validated successfully.";
             } else {
                 $_SESSION['error'] = "Error validating teacher account.";
@@ -76,7 +83,7 @@ class AdminController {
 
         if (isset($_GET['id'])) {
             $userId = $_GET['id'];
-            if ($this->adminModel->deleteUser($userId)) {
+            if ($this->administrateur->deleteUser($userId)) {
                 $_SESSION['message'] = "User deleted successfully.";
             } else {
                 $_SESSION['error'] = "Error deleting user.";
@@ -95,7 +102,7 @@ class AdminController {
 
         if (isset($_GET['id'])) {
             $courseId = $_GET['id'];
-            if ($this->adminModel->approveCourse($courseId)) {
+            if ($this->administrateur->approveCourse($courseId)) {
                 $_SESSION['message'] = "Course approved successfully.";
             } else {
                 $_SESSION['error'] = "Error approving course.";
@@ -114,7 +121,7 @@ class AdminController {
 
         if (isset($_GET['id'])) {
             $courseId = $_GET['id'];
-            if ($this->adminModel->deleteCourse($courseId)) {
+            if ($this->administrateur->deleteCourse($courseId)) {
                 $_SESSION['message'] = "Course deleted successfully.";
             } else {
                 $_SESSION['error'] = "Error deleting course.";
@@ -133,7 +140,7 @@ class AdminController {
 
         if (isset($_POST['tag_name'])) {
             $tagName = trim($_POST['tag_name']);
-            if ($this->adminModel->addTag($tagName)) {
+            if ($this->administrateur->addTag($tagName)) {
                 $_SESSION['message'] = "Tag added successfully.";
             } else {
                 $_SESSION['error'] = "Error adding tag.";
@@ -152,7 +159,7 @@ class AdminController {
 
         if (isset($_GET['id'])) {
             $tagId = $_GET['id'];
-            if ($this->adminModel->deleteTag($tagId)) {
+            if ($this->administrateur->deleteTag($tagId)) {
                 $_SESSION['message'] = "Tag deleted successfully.";
             } else {
                 $_SESSION['error'] = "Error deleting tag.";
@@ -161,5 +168,44 @@ class AdminController {
 
         header('Location: index.php?action=adminDashboard&section=tags');
         exit();
+    }
+
+    private function getDashboardData() {
+        // Get existing counts
+        $totalUsers = $this->administrateur->getTotalUsers();
+        $totalCourses = $this->administrateur->getTotalCourses();
+        $pendingTeachers = $this->administrateur->getPendingTeachersCount();
+        $totalTags = $this->administrateur->getTotalTags();
+        
+        // Get user growth data (last 6 months)
+        $userGrowthData = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $date = date('Y-m', strtotime("-$i months"));
+            $userGrowthData[$date] = $this->administrateur->getUserCountByMonth($date);
+        }
+
+        // Get course distribution by category
+        $courseDistributionData = $this->administrateur->getCourseCountByCategory();
+
+        // Get user counts by role
+        $studentCount = $this->administrateur->getUserCountByRole('etudiant');
+        $teacherCount = $this->administrateur->getUserCountByRole('enseignant');
+        $adminCount = $this->administrateur->getUserCountByRole('administrateur');
+
+        // Get recent activities
+        $recentActivities = $this->administrateur->getRecentActivities();
+
+        return [
+            'totalUsers' => $totalUsers,
+            'totalCourses' => $totalCourses,
+            'pendingTeachers' => $pendingTeachers,
+            'totalTags' => $totalTags,
+            'userGrowthData' => $userGrowthData,
+            'courseDistributionData' => $courseDistributionData,
+            'studentCount' => $studentCount,
+            'teacherCount' => $teacherCount,
+            'adminCount' => $adminCount,
+            'recentActivities' => $recentActivities
+        ];
     }
 }

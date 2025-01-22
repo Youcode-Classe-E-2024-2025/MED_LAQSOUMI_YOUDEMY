@@ -206,8 +206,39 @@ class Administrateur extends Utilisateur {
         ")->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    public function getUserCountByMonth($month) {
+        $query = "SELECT COUNT(*) as total FROM utilisateurs WHERE DATE_FORMAT(created_at, '%Y-%m') = :month";
+        $stmt = $this->db->prepare($query);
+        $stmt->execute(['month' => $month]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result['total'];
+    }
+
+    public function getCourseCountByCategory() {
+        $query = "SELECT c.nom as category, COUNT(co.id) as count 
+                 FROM categories c 
+                 LEFT JOIN cours co ON c.id = co.categorie_id 
+                 GROUP BY c.id, c.nom";
+        $stmt = $this->db->query($query);
+        $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        $distribution = [];
+        foreach ($results as $row) {
+            $distribution[$row['category']] = (int)$row['count'];
+        }
+        return $distribution;
+    }
+
+    public function getUserCountByRole($role) {
+        $query = "SELECT COUNT(*) as total FROM utilisateurs WHERE role = :role AND status = 'active'";
+        $stmt = $this->db->prepare($query);
+        $stmt->execute(['role' => $role]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result['total'];
+    }
+
     public function getTotalUsers() {
-        $query = "SELECT COUNT(*) as total FROM utilisateurs";
+        $query = "SELECT COUNT(*) as total FROM utilisateurs WHERE status = 'active'";
         $stmt = $this->db->query($query);
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
         return $result['total'];
@@ -222,7 +253,8 @@ class Administrateur extends Utilisateur {
 
     public function getPendingTeachersCount() {
         $query = "SELECT COUNT(*) as total FROM utilisateurs WHERE role = 'enseignant' AND status = 'pending'";
-        $stmt = $this->db->query($query);
+        $stmt = $this->db->prepare($query);
+        $stmt->execute();
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
         return $result['total'];
     }
@@ -234,24 +266,18 @@ class Administrateur extends Utilisateur {
         return $result['total'];
     }
 
-    public function getRecentActivities() {
-        $query = "SELECT 
-                    'New teacher registration' as action,
-                    nom as user,
-                    created_at as date
-                 FROM utilisateurs 
-                 WHERE role = 'enseignant' AND status = 'pending'
+    public function getRecentActivities($limit = 5) {
+        $query = "SELECT u.nom as user_name, 'Created Course' as action, co.titre as details, co.created_at as date
+                 FROM cours co
+                 JOIN utilisateurs u ON co.enseignant_id = u.id
                  UNION ALL
-                 SELECT 
-                    'New course submitted' as action,
-                    CONCAT(c.titre, ' by ', u.nom) as user,
-                    c.created_at as date
-                 FROM cours c
-                 JOIN utilisateurs u ON c.enseignant_id = u.id
-                 WHERE c.status = 'pending'
+                 SELECT u.nom as user_name, 'Joined Platform' as action, u.role as details, u.created_at as date
+                 FROM utilisateurs u
                  ORDER BY date DESC
-                 LIMIT 10";
-        $stmt = $this->db->query($query);
+                 LIMIT :limit";
+        $stmt = $this->db->prepare($query);
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
