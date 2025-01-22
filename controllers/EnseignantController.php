@@ -40,7 +40,7 @@ class EnseignantController {
         }
 
         // Get categories and tags for the form
-        $categories = (new Category($this->db))->getCategories();
+        $categories = (new Category($this->db))->getAllCategories();
         // $tags = (new Tag($this->db))->getAllTags();
         
         require_once __DIR__ . '/../views/add_course.php';
@@ -73,7 +73,7 @@ class EnseignantController {
         }
 
         $course = $this->course->getCourseById($coursId);
-        $categories = (new Category($this->db))->getCategories();
+        $categories = (new Category($this->db))->getAllCategories();
         // $tags = (new Tag($this->db))->getAllTags();
         
         require_once __DIR__ . '/../views/edit_course.php';
@@ -112,10 +112,38 @@ class EnseignantController {
             $inscriptions = $this->enseignant->consulterInscriptions($coursId);
             $course = $this->course->getCourseById($coursId);
             
+            // If it's an AJAX request, return JSON
+            if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
+                strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+                header('Content-Type: application/json');
+                echo json_encode([
+                    'inscriptions' => $inscriptions,
+                    'course' => $course
+                ]);
+                exit;
+            }
+            
+            // Otherwise, return the view
             require_once __DIR__ . '/../views/course_inscriptions.php';
         } else {
             header('Location: index.php?action=teacherDashboard');
             exit;
         }
+    }
+
+    public function teacherDashboard() {
+        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'enseignant') {
+            header('Location: index.php?action=loginPage');
+            exit;
+        }
+
+        $teacherId = $_SESSION['user_id'];
+        $courses = $this->enseignant->getTeacherCourses($teacherId);
+        $enrollments = $this->enseignant->getTeacherEnrollments($teacherId);
+        $totalStudents = $this->enseignant->getTotalStudents($teacherId);
+        $totalCourses = count($courses);
+        $totalRevenue = $this->enseignant->getTotalRevenue($teacherId);
+
+        require_once __DIR__ . '/../views/teacher_dashboard.php';
     }
 }

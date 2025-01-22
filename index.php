@@ -54,6 +54,9 @@ switch ($action) {
         break;
 
     // Teacher routes
+    case 'teacherDashboard':
+        require_once 'views/teacher_dashboard.php';
+        break;
     case 'ajouterCours':
         $enseignantController->ajouterCours();
         break;
@@ -75,11 +78,17 @@ switch ($action) {
     case 'course/delete':
         $courseController->deleteCourse();
         break;
+    // case 'course/list':
+    //     $courseController->getTeacherCourses();
+    //     break;
     case 'course/enrollments':
         $courseController->getEnrollments();
         break;
     case 'teacher/statistics':
         $courseController->getTeacherStatistics();
+        break;
+    case 'course/details':
+        $courseController->getCourseById($id);
         break;
 
     // Admin routes

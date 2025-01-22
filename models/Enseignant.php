@@ -96,7 +96,7 @@ class Enseignant extends Utilisateur {
 
     public function consulterInscriptions($coursId) {
         $stmt = $this->db->prepare("
-            SELECT u.id, u.nom, u.email, i.date_inscription
+            SELECT u.id, u.nom, u.email, i.date_inscription as dateInscription
             FROM utilisateurs u
             JOIN inscriptions i ON u.id = i.etudiant_id
             JOIN cours c ON i.cours_id = c.id
@@ -118,5 +118,74 @@ class Enseignant extends Utilisateur {
         ");
         $stmt->execute([$_SESSION['user_id']]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getTeacherCourses($teacherId) {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT c.*, cat.nom as category_name 
+                FROM cours c 
+                LEFT JOIN categories cat ON c.categorie_id = cat.id 
+                WHERE c.enseignant_id = ?
+                ORDER BY c.date_creation DESC
+            ");
+            $stmt->execute([$teacherId]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log($e->getMessage());
+            return [];
+        }
+    }
+
+    public function getTeacherEnrollments($teacherId) {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT i.*, c.titre as cours_titre, u.nom as etudiant_nom, u.email as etudiant_email
+                FROM inscriptions i
+                JOIN cours c ON i.cours_id = c.id
+                JOIN utilisateurs u ON i.etudiant_id = u.id
+                WHERE c.enseignant_id = ?
+                ORDER BY i.date_inscription DESC
+            ");
+            $stmt->execute([$teacherId]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log($e->getMessage());
+            return [];
+        }
+    }
+
+    public function getTotalStudents($teacherId) {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT COUNT(DISTINCT i.etudiant_id) as total
+                FROM inscriptions i
+                JOIN cours c ON i.cours_id = c.id
+                WHERE c.enseignant_id = ?
+            ");
+            $stmt->execute([$teacherId]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $result['total'] ?? 0;
+        } catch (PDOException $e) {
+            error_log($e->getMessage());
+            return 0;
+        }
+    }
+
+    public function getTotalRevenue($teacherId) {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT COALESCE(SUM(i.montant), 0) as total
+                FROM inscriptions i
+                JOIN cours c ON i.cours_id = c.id
+                WHERE c.enseignant_id = ?
+            ");
+            $stmt->execute([$teacherId]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $result['total'] ?? 0;
+        } catch (PDOException $e) {
+            error_log($e->getMessage());
+            return 0;
+        }
     }
 }
