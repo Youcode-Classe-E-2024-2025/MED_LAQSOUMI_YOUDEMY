@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/CourseTag.php';
 
 class Course {
     private $db;
@@ -12,6 +13,7 @@ class Course {
     private $categorie_id;
     private $image;
     private $tagid = null;
+    private $courseTagManager;
 
     public function __construct($db) {
         if ($db instanceof DatabaseConnection) {
@@ -27,6 +29,7 @@ class Course {
         $this->categorie_id = null;
         $this->image = '';
         $this->tagid = null;
+        $this->courseTagManager = new CourseTag($db);
     }
 
     // public function ajouterTag($tagId){
@@ -495,5 +498,39 @@ class Course {
             error_log("General error in getTeacherCourses: " . $e->getMessage());
             return [];
         }
+    }
+
+    public function addTag($tagId) {
+        if (!$this->id) {
+            throw new Exception("Course must be saved before adding tags");
+        }
+        return $this->courseTagManager->addTagToCourse($this->id, $tagId);
+    }
+
+    public function removeTag($tagId) {
+        if (!$this->id) {
+            throw new Exception("Course must be saved before removing tags");
+        }
+        return $this->courseTagManager->removeTagFromCourse($this->id, $tagId);
+    }
+
+    public function getTags() {
+        if (!$this->id) {
+            return [];
+        }
+        return $this->courseTagManager->getTagsForCourse($this->id);
+    }
+
+    public function setTags($tagIds) {
+        if (!$this->id) {
+            throw new Exception("Course must be saved before setting tags");
+        }
+        // First remove all existing tags
+        $this->courseTagManager->removeAllTagsFromCourse($this->id);
+        // Then add new tags
+        foreach ($tagIds as $tagId) {
+            $this->courseTagManager->addTagToCourse($this->id, $tagId);
+        }
+        return true;
     }
 }

@@ -52,14 +52,14 @@ CREATE TABLE tags (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Créer la table cours_tags
+-- Créer la table d'association cours_tags
 CREATE TABLE cours_tags (
     cours_id INT,
     tag_id INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (cours_id, tag_id),
     FOREIGN KEY (cours_id) REFERENCES cours(id) ON DELETE CASCADE,
-    FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
 );
 
 -- Insérer 30 données dans la table catégories
@@ -165,7 +165,6 @@ INSERT INTO inscriptions (etudiant_id, cours_id, status) VALUES
 (21, 21, 'active'), (22, 22, 'active'), (23, 23, 'active'), (24, 24, 'active'), (25, 25, 'active'),
 (26, 26, 'active'), (27, 27, 'active'), (28, 28, 'active'), (29, 29, 'active'), (30, 30, 'active');
 
-
 -- Add status column to utilisateurs table
 ALTER TABLE utilisateurs ADD COLUMN status ENUM('pending', 'active', 'suspended') DEFAULT 'active';
 
@@ -174,7 +173,5 @@ UPDATE utilisateurs SET status = 'active' WHERE status IS NULL;
 
 UPDATE utilisateurs SET status = 'pending' WHERE role = 'enseignant' AND id IN (2, 7, 10, 16);
 
-
 ALTER TABLE cours
 ADD COLUMN status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending' AFTER contenu;
-
