@@ -15,6 +15,7 @@ CREATE TABLE utilisateurs (
     email VARCHAR(255) UNIQUE NOT NULL,
     mot_de_passe VARCHAR(255) NOT NULL,
     role ENUM('etudiant', 'enseignant', 'administrateur') NOT NULL,
+    status ENUM('pending', 'active', 'suspended') DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -61,7 +62,6 @@ CREATE TABLE cours_tags (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-
 -- Insérer 30 données dans la table catégories
 INSERT INTO categories (nom) VALUES
 ('Programmation'), ('Design'), ('Marketing'), ('Langues'), ('Photographie'),
@@ -71,39 +71,38 @@ INSERT INTO categories (nom) VALUES
 ('Jardinage'), ('Écriture'), ('Mode'), ('Fitness'), ('Santé'),
 ('Psychologie'), ('Histoire'), ('Voyage'), ('Finance'), ('Éducation');
 
--- Insérer 30 données dans la table utilisateurs
-INSERT INTO utilisateurs (nom, email, mot_de_passe, role) VALUES
-('Ahmed', 'ahmed@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'etudiant'),
-('Fatima', 'fatima@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'enseignant'),
-('Hassan', 'hassan@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'administrateur'),
-('Rania', 'rania@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'etudiant'),
-('Karim', 'karim@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'enseignant'),
-('Youssef', 'youssef@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'etudiant'),
-('Amina', 'amina@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'enseignant'),
-('Nour', 'nour@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'administrateur'),
-('Soukaina', 'soukaina@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'etudiant'),
-('Samir', 'samir@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'enseignant'),
-('Omar', 'omar@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'etudiant'),
-('Khadija', 'khadija@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'enseignant'),
-('Mohamed', 'mohamed@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'etudiant'),
-('Salma', 'salma@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'enseignant'),
-('Hamza', 'hamza@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'etudiant'),
-('Sara', 'sara@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'enseignant'),
-('Zakaria', 'zakaria@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'etudiant'),
-('Manal', 'manal@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'enseignant'),
-('Yassine', 'yassine@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'etudiant'),
-('Imane', 'imane@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'enseignant'),
-('Anas', 'anas@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'etudiant'),
-('Aya', 'aya@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'enseignant'),
-('Simo', 'simo@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'etudiant'),
-('Nawal', 'nawal@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'enseignant'),
-('Taha', 'taha@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'etudiant'),
-('Amal', 'amal@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'enseignant'),
-('Laila', 'laila@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'etudiant'),
-('Fouad', 'fouad@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'enseignant'),
-('Chakib', 'chakib@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'etudiant'),
-('Hind', 'hind@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'enseignant');
-
+-- Insérer 30 données dans la table utilisateurs avec status
+INSERT INTO utilisateurs (nom, email, mot_de_passe, role, status) VALUES
+('Ahmed', 'ahmed@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'etudiant', 'active'),
+('Fatima', 'fatima@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'enseignant', 'pending'),
+('Hassan', 'hassan@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'administrateur', 'active'),
+('Rania', 'rania@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'etudiant', 'active'),
+('Karim', 'karim@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'enseignant', 'active'),
+('Youssef', 'youssef@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'etudiant', 'active'),
+('Amina', 'amina@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'enseignant', 'pending'),
+('Nour', 'nour@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'administrateur', 'active'),
+('Soukaina', 'soukaina@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'etudiant', 'active'),
+('Samir', 'samir@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'enseignant', 'pending'),
+('Omar', 'omar@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'etudiant', 'active'),
+('Khadija', 'khadija@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'enseignant', 'active'),
+('Mohamed', 'mohamed@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'etudiant', 'active'),
+('Salma', 'salma@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'enseignant', 'active'),
+('Hamza', 'hamza@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'etudiant', 'active'),
+('Sara', 'sara@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'enseignant', 'pending'),
+('Zakaria', 'zakaria@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'etudiant', 'active'),
+('Manal', 'manal@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'enseignant', 'active'),
+('Yassine', 'yassine@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'etudiant', 'active'),
+('Imane', 'imane@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'enseignant', 'pending'),
+('Anas', 'anas@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'etudiant', 'active'),
+('Aya', 'aya@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'enseignant', 'active'),
+('Simo', 'simo@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'etudiant', 'active'),
+('Nawal', 'nawal@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'enseignant', 'active'),
+('Taha', 'taha@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'etudiant', 'active'),
+('Amal', 'amal@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'enseignant', 'active'),
+('Laila', 'laila@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'etudiant', 'active'),
+('Fouad', 'fouad@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'enseignant', 'active'),
+('Chakib', 'chakib@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'etudiant', 'active'),
+('Hind', 'hind@example.com', '$2y$10$jb2COpaZSdFhs4PXUcRSHOX7LvQrROHZ.Qe5zhNuAIXWiFOj4injG', 'enseignant', 'active');
 
 -- Insérer les données avec des liens d’images fictifs
 INSERT INTO cours (titre, description, contenu, image, categorie_id, enseignant_id) VALUES
@@ -139,7 +138,6 @@ INSERT INTO cours (titre, description, contenu, image, categorie_id, enseignant_
 ('Sport et Activité', 'Pratiquez vos sports', 'Contenu Sport', 'https://placehold.co/300', 21, 7),
 ('Éducation Numérique', 'Apprenez à écrire', 'Contenu Éducation', 'https://placehold.co/300', 17, 20);
 
-
 -- Insérer 30 données dans la table tags
 INSERT INTO tags (nom) VALUES
 ('HTML'), ('CSS'), ('JavaScript'), ('Photoshop'), ('Social Media'),
@@ -166,3 +164,17 @@ INSERT INTO inscriptions (etudiant_id, cours_id, status) VALUES
 (16, 16, 'active'), (17, 17, 'active'), (18, 18, 'active'), (19, 19, 'active'), (20, 20, 'active'),
 (21, 21, 'active'), (22, 22, 'active'), (23, 23, 'active'), (24, 24, 'active'), (25, 25, 'active'),
 (26, 26, 'active'), (27, 27, 'active'), (28, 28, 'active'), (29, 29, 'active'), (30, 30, 'active');
+
+
+-- Add status column to utilisateurs table
+ALTER TABLE utilisateurs ADD COLUMN status ENUM('pending', 'active', 'suspended') DEFAULT 'active';
+
+-- Set default status for existing users
+UPDATE utilisateurs SET status = 'active' WHERE status IS NULL;
+
+UPDATE utilisateurs SET status = 'pending' WHERE role = 'enseignant' AND id IN (2, 7, 10, 16);
+
+
+ALTER TABLE cours
+ADD COLUMN status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending' AFTER contenu;
+

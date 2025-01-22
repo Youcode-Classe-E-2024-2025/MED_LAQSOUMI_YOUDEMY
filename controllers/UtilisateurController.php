@@ -33,7 +33,19 @@ class UtilisateurController
                     $_SESSION['name'] = $user['nom'];
                     $_SESSION['role'] = $user['role'];
                     $_SESSION['user_id'] = $user['id'];
-                    header('Location: index.php?action=home');
+                    
+                    // Redirect based on user role
+                    switch ($user['role']) {
+                        case 'administrateur':
+                            header('Location: index.php?action=adminDashboard');
+                            break;
+                        case 'enseignant':
+                            header('Location: index.php?action=teacherDashboard');
+                            break;
+                        default:
+                            header('Location: index.php?action=home');
+                            break;
+                    }
                     exit;
                 } else {
                     $error = "Invalid email or password.";
@@ -90,7 +102,19 @@ class UtilisateurController
                         $_SESSION['name'] = $user['nom'];
                         $_SESSION['role'] = $user['role'];
                         $_SESSION['user_id'] = $user['id'];
-                        header('Location: index.php?action=home');
+                        
+                        // Redirect based on user role after registration
+                        switch ($user['role']) {
+                            case 'administrateur':
+                                header('Location: index.php?action=adminDashboard');
+                                break;
+                            case 'enseignant':
+                                header('Location: index.php?action=teacherDashboard');
+                                break;
+                            default:
+                                header('Location: index.php?action=home');
+                                break;
+                        }
                         exit;
                     } else {
                         $error = "Invalid email or password.";

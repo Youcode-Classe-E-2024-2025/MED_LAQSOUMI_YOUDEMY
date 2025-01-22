@@ -1,124 +1,165 @@
 <?php
-require_once __DIR__ . '/../models/Administrateur.php';
-require_once __DIR__ . '/../models/Enseignant.php';
-require_once __DIR__ . '/../models/Course.php';
-// require_once __DIR__ . '/../models/Tag.php';
-
 class AdminController {
+    private $adminModel;
     private $db;
-    private $admin;
 
     public function __construct($db) {
+        require_once 'models/Administrateur.php';
         $this->db = $db;
-        $this->admin = new Administrateur($this->db);
+        $this->adminModel = new Administrateur($db);
     }
 
-    public function validerCompteEnseignant() {
+    public function adminDashboard() {
+        // Check if user is logged in and is an admin
         if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'administrateur') {
-            header('Location: index.php?action=loginPage');
-            exit;
+            header('Location: index.php?action=login');
+            exit();
         }
 
-        $enseignantId = isset($_POST['enseignant_id']) ? (int)$_POST['enseignant_id'] : null;
-        
-        if ($enseignantId) {
-            $result = $this->admin->validerCompteEnseignant($enseignantId);
-            if ($result) {
-                $_SESSION['success'] = "Compte enseignant validé avec succès";
+        $data = [];
+
+        // Get dashboard statistics
+        $data['totalUsers'] = $this->adminModel->getTotalUsers();
+        $data['totalCourses'] = $this->adminModel->getTotalCourses();
+        $data['pendingTeachers'] = $this->adminModel->getPendingTeachersCount();
+        $data['totalTags'] = $this->adminModel->getTotalTags();
+
+        // Get recent activities
+        $data['recentActivities'] = $this->adminModel->getRecentActivities();
+
+        // Get users list for the users section
+        if (isset($_GET['section']) && $_GET['section'] == 'users') {
+            $data['users'] = $this->adminModel->getAllUsers();
+        }
+
+        // Get courses list for the courses section
+        if (isset($_GET['section']) && $_GET['section'] == 'courses') {
+            $data['courses'] = $this->adminModel->getAllCourses();
+        }
+
+        // Get tags list for the tags section
+        if (isset($_GET['section']) && $_GET['section'] == 'tags') {
+            $data['tags'] = $this->adminModel->getAllTagsList();
+        }
+
+        // Extract data to make variables available in view
+        extract($data);
+
+        // Load the view
+        require_once 'views/admin_dashboard.php';
+    }
+
+    public function validateTeacher() {
+        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'administrateur') {
+            header('Location: index.php?action=login');
+            exit();
+        }
+
+        if (isset($_GET['id'])) {
+            $teacherId = $_GET['id'];
+            if ($this->adminModel->validateTeacher($teacherId)) {
+                $_SESSION['message'] = "Teacher account validated successfully.";
             } else {
-                $_SESSION['error'] = "Erreur lors de la validation du compte enseignant";
-            }
-        }
-        
-        header('Location: index.php?action=adminDashboard');
-        exit;
-    }
-
-    public function gererUtilisateurs() {
-        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'administrateur') {
-            header('Location: index.php?action=loginPage');
-            exit;
-        }
-
-        $action = $_POST['action'] ?? '';
-        $userId = isset($_POST['user_id']) ? (int)$_POST['user_id'] : null;
-
-        if ($action && $userId) {
-            switch ($action) {
-                case 'activer':
-                case 'desactiver':
-                case 'supprimer':
-                    $result = $this->admin->gererUtilisateurs($userId, $action);
-                    if ($result) {
-                        $_SESSION['success'] = "Action effectuée avec succès";
-                    } else {
-                        $_SESSION['error'] = "Erreur lors de l'exécution de l'action";
-                    }
-                    break;
+                $_SESSION['error'] = "Error validating teacher account.";
             }
         }
 
-        $users = $this->admin->getAllUsers();
-        require_once __DIR__ . '/../views/admin_users.php';
+        header('Location: index.php?action=adminDashboard&section=users');
+        exit();
     }
 
-    public function gererContenus() {
+    public function deleteUser() {
         if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'administrateur') {
-            header('Location: index.php?action=loginPage');
-            exit;
+            header('Location: index.php?action=login');
+            exit();
         }
 
-        $action = $_POST['action'] ?? '';
-        $coursId = isset($_POST['cours_id']) ? (int)$_POST['cours_id'] : null;
-
-        if ($action && $coursId) {
-            switch ($action) {
-                case 'approuver':
-                case 'rejeter':
-                case 'supprimer':
-                    $result = $this->admin->gererContenus($coursId, $action);
-                    if ($result) {
-                        $_SESSION['success'] = "Action effectuée avec succès";
-                    } else {
-                        $_SESSION['error'] = "Erreur lors de l'exécution de l'action";
-                    }
-                    break;
+        if (isset($_GET['id'])) {
+            $userId = $_GET['id'];
+            if ($this->adminModel->deleteUser($userId)) {
+                $_SESSION['message'] = "User deleted successfully.";
+            } else {
+                $_SESSION['error'] = "Error deleting user.";
             }
         }
 
-        $courses = $this->admin->getAllCourses();
-        require_once __DIR__ . '/../views/admin_courses.php';
+        header('Location: index.php?action=adminDashboard&section=users');
+        exit();
     }
 
-    public function insererTags() {
+    public function approveCourse() {
         if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'administrateur') {
-            header('Location: index.php?action=loginPage');
-            exit;
+            header('Location: index.php?action=login');
+            exit();
         }
 
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $tags = isset($_POST['tags']) ? explode(',', $_POST['tags']) : [];
-            if (!empty($tags)) {
-                $result = $this->admin->insererTags($tags);
-                if ($result) {
-                    $_SESSION['success'] = "Tags ajoutés avec succès";
-                } else {
-                    $_SESSION['error'] = "Erreur lors de l'ajout des tags";
-                }
+        if (isset($_GET['id'])) {
+            $courseId = $_GET['id'];
+            if ($this->adminModel->approveCourse($courseId)) {
+                $_SESSION['message'] = "Course approved successfully.";
+            } else {
+                $_SESSION['error'] = "Error approving course.";
             }
         }
 
-        // $existingTags = (new Tag($this->db))->getAllTags();
-        require_once __DIR__ . '/../views/admin_tags.php';
+        header('Location: index.php?action=adminDashboard&section=courses');
+        exit();
     }
 
-    public function consulterStatistiques() {
+    public function deleteCourse() {
         if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'administrateur') {
-            header('Location: index.php?action=loginPage');
-            exit;
+            header('Location: index.php?action=login');
+            exit();
         }
 
-        $stats = $this->admin->consulterStatistiques();
-        require_once __DIR__ . '/../views/admin_stats.php';
+        if (isset($_GET['id'])) {
+            $courseId = $_GET['id'];
+            if ($this->adminModel->deleteCourse($courseId)) {
+                $_SESSION['message'] = "Course deleted successfully.";
+            } else {
+                $_SESSION['error'] = "Error deleting course.";
+            }
+        }
+
+        header('Location: index.php?action=adminDashboard&section=courses');
+        exit();
+    }
+
+    public function addTag() {
+        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'administrateur') {
+            header('Location: index.php?action=login');
+            exit();
+        }
+
+        if (isset($_POST['tag_name'])) {
+            $tagName = trim($_POST['tag_name']);
+            if ($this->adminModel->addTag($tagName)) {
+                $_SESSION['message'] = "Tag added successfully.";
+            } else {
+                $_SESSION['error'] = "Error adding tag.";
+            }
+        }
+
+        header('Location: index.php?action=adminDashboard&section=tags');
+        exit();
+    }
+
+    public function deleteTag() {
+        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'administrateur') {
+            header('Location: index.php?action=login');
+            exit();
+        }
+
+        if (isset($_GET['id'])) {
+            $tagId = $_GET['id'];
+            if ($this->adminModel->deleteTag($tagId)) {
+                $_SESSION['message'] = "Tag deleted successfully.";
+            } else {
+                $_SESSION['error'] = "Error deleting tag.";
+            }
+        }
+
+        header('Location: index.php?action=adminDashboard&section=tags');
+        exit();
     }
 }

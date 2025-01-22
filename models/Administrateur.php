@@ -2,8 +2,8 @@
 require_once __DIR__ . '/Utilisateur.php';
 
 class Administrateur extends Utilisateur {
-    public function __construct() {
-        parent::__construct();
+    public function __construct($db = null) {
+        parent::__construct($db);
         $this->role = 'administrateur';
     }
 
@@ -121,6 +121,63 @@ class Administrateur extends Utilisateur {
         return $stats;
     }
 
+    public function getDashboardStats() {
+        $stats = [];
+        
+        // Total courses
+        $stats['total_cours'] = $this->db->query("
+            SELECT COUNT(*) FROM cours
+        ")->fetchColumn();
+
+        // Total users
+        $stats['total_utilisateurs'] = $this->db->query("
+            SELECT COUNT(*) FROM utilisateurs
+        ")->fetchColumn();
+
+        // Total teachers
+        $stats['total_enseignants'] = $this->db->query("
+            SELECT COUNT(*) FROM utilisateurs WHERE role = 'enseignant'
+        ")->fetchColumn();
+
+        // Total categories
+        $stats['total_categories'] = $this->db->query("
+            SELECT COUNT(*) FROM categories
+        ")->fetchColumn();
+
+        return $stats;
+    }
+
+    public function getEnseignantsEnAttente() {
+        return $this->db->query("
+            SELECT * FROM utilisateurs 
+            WHERE role = 'enseignant' 
+            AND status = 'pending'
+            ORDER BY created_at DESC
+        ")->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getDernieresActivites($limit = 10) {
+        return $this->db->query("
+            (SELECT 
+                CONCAT('Nouveau cours: ', c.titre) as description,
+                c.created_at
+            FROM cours c
+            ORDER BY c.created_at DESC
+            LIMIT 5)
+            UNION ALL
+            (SELECT 
+                CONCAT('Nouvelle inscription: ', u.nom, ' dans ', c.titre) as description,
+                i.created_at
+            FROM inscriptions i
+            JOIN utilisateurs u ON i.etudiant_id = u.id
+            JOIN cours c ON i.cours_id = c.id
+            ORDER BY i.created_at DESC
+            LIMIT 5)
+            ORDER BY created_at DESC
+            LIMIT $limit
+        ")->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     public function getAllUsers() {
         return $this->db->query("
             SELECT u.*, 
@@ -133,12 +190,145 @@ class Administrateur extends Utilisateur {
 
     public function getAllCourses() {
         return $this->db->query("
-            SELECT c.*, u.nom as enseignant_nom, cat.nom as categorie_nom,
-                   (SELECT COUNT(*) FROM inscriptions WHERE cours_id = c.id) as total_inscrits
+            SELECT 
+                c.id, 
+                c.titre, 
+                u.nom as enseignant, 
+                cat.nom as categorie, 
+                c.status, 
+                c.created_at,
+                u.id as enseignant_id,
+                cat.id as categorie_id
             FROM cours c
             LEFT JOIN utilisateurs u ON c.enseignant_id = u.id
             LEFT JOIN categories cat ON c.categorie_id = cat.id
             ORDER BY c.created_at DESC
         ")->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getTotalUsers() {
+        $query = "SELECT COUNT(*) as total FROM utilisateurs";
+        $stmt = $this->db->query($query);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result['total'];
+    }
+
+    public function getTotalCourses() {
+        $query = "SELECT COUNT(*) as total FROM cours";
+        $stmt = $this->db->query($query);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result['total'];
+    }
+
+    public function getPendingTeachersCount() {
+        $query = "SELECT COUNT(*) as total FROM utilisateurs WHERE role = 'enseignant' AND status = 'pending'";
+        $stmt = $this->db->query($query);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result['total'];
+    }
+
+    public function getTotalTags() {
+        $query = "SELECT COUNT(*) as total FROM tags";
+        $stmt = $this->db->query($query);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result['total'];
+    }
+
+    public function getRecentActivities() {
+        $query = "SELECT 
+                    'New teacher registration' as action,
+                    nom as user,
+                    created_at as date
+                 FROM utilisateurs 
+                 WHERE role = 'enseignant' AND status = 'pending'
+                 UNION ALL
+                 SELECT 
+                    'New course submitted' as action,
+                    CONCAT(c.titre, ' by ', u.nom) as user,
+                    c.created_at as date
+                 FROM cours c
+                 JOIN utilisateurs u ON c.enseignant_id = u.id
+                 WHERE c.status = 'pending'
+                 ORDER BY date DESC
+                 LIMIT 10";
+        $stmt = $this->db->query($query);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getAllUsersList() {
+        $query = "SELECT id, nom, email, role, status, created_at FROM utilisateurs ORDER BY created_at DESC";
+        $stmt = $this->db->query($query);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getAllCoursesList() {
+        $query = "SELECT c.id, c.titre, u.nom as enseignant, cat.nom as categorie, c.status, c.created_at
+                 FROM cours c
+                 JOIN utilisateurs u ON c.enseignant_id = u.id
+                 JOIN categories cat ON c.categorie_id = cat.id
+                 ORDER BY c.created_at DESC";
+        $stmt = $this->db->query($query);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getAllTagsList() {
+        $query = "SELECT id, nom, created_at FROM tags ORDER BY created_at DESC";
+        $stmt = $this->db->query($query);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function validateTeacher($teacherId) {
+        $query = "UPDATE utilisateurs SET status = 'active' WHERE id = ? AND role = 'enseignant'";
+        $stmt = $this->db->prepare($query);
+        return $stmt->execute([$teacherId]);
+    }
+
+    public function deleteUser($userId) {
+        // Don't allow deleting if it's the last admin
+        if ($this->isLastAdmin($userId)) {
+            return false;
+        }
+
+        $query = "DELETE FROM utilisateurs WHERE id = ?";
+        $stmt = $this->db->prepare($query);
+        return $stmt->execute([$userId]);
+    }
+
+    private function isLastAdmin($userId) {
+        $query = "SELECT COUNT(*) as count FROM utilisateurs WHERE role = 'administrateur' AND id != ?";
+        $stmt = $this->db->prepare($query);
+        $stmt->execute([$userId]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result['count'] == 0;
+    }
+
+    public function approveCourse($courseId) {
+        $query = "UPDATE cours SET status = 'approved' WHERE id = ?";
+        $stmt = $this->db->prepare($query);
+        return $stmt->execute([$courseId]);
+    }
+
+    public function deleteCourse($courseId) {
+        $query = "DELETE FROM cours WHERE id = ?";
+        $stmt = $this->db->prepare($query);
+        return $stmt->execute([$courseId]);
+    }
+
+    public function addTag($tagName) {
+        $query = "INSERT INTO tags (nom) VALUES (?)";
+        $stmt = $this->db->prepare($query);
+        return $stmt->execute([$tagName]);
+    }
+
+    public function deleteTag($tagId) {
+        // First, delete any course_tag associations
+        $query = "DELETE FROM cours_tags WHERE tag_id = ?";
+        $stmt = $this->db->prepare($query);
+        $stmt->execute([$tagId]);
+
+        // Then delete the tag
+        $query = "DELETE FROM tags WHERE id = ?";
+        $stmt = $this->db->prepare($query);
+        return $stmt->execute([$tagId]);
     }
 }

@@ -1,31 +1,32 @@
 <?php
 session_start();
-require_once __DIR__ . '/config/database.php';
+
+require_once __DIR__ . '/config/Database.php';
 require_once __DIR__ . '/controllers/UtilisateurController.php';
 require_once __DIR__ . '/controllers/CourseController.php';
-require_once __DIR__ . '/controllers/EtudiantController.php';
-require_once __DIR__ . '/controllers/EnseignantController.php';
 require_once __DIR__ . '/controllers/AdminController.php';
+require_once __DIR__ . '/controllers/EnseignantController.php';
+require_once __DIR__ . '/controllers/EtudiantController.php';
 require_once __DIR__ . '/controllers/CategoryController.php';
 require_once __DIR__ . '/controllers/TagController.php';
 
-$db = DatabaseConnection::getInstance();
+$db = DatabaseConnection::getInstance()->getConnection();
+
 $user = new UtilisateurController($db);
 $courseController = new CourseController($db);
-$etudiantController = new EtudiantController($db);
-$enseignantController = new EnseignantController($db);
 $adminController = new AdminController($db);
+$enseignantController = new EnseignantController($db);
+$etudiantController = new EtudiantController($db);
 $categoryController = new CategoryController($db);
 $tagController = new TagController($db);
 
-$action = isset($_GET['action']) ? $_GET['action'] : 'home';
+$action = $_GET['action'] ?? 'home';
 
 switch ($action) {
+    // Home and Authentication Routes
     case 'home':
         require_once 'views/index.php';
         break;
-
-    // Authentication routes
     case 'loginPage':
         require_once 'views/login.php';
         break;
@@ -78,9 +79,6 @@ switch ($action) {
     case 'course/delete':
         $courseController->deleteCourse();
         break;
-    // case 'course/list':
-    //     $courseController->getTeacherCourses();
-    //     break;
     case 'course/enrollments':
         $courseController->getEnrollments();
         break;
@@ -92,6 +90,9 @@ switch ($action) {
         break;
 
     // Admin routes
+    case 'adminDashboard':
+        $adminController->adminDashboard();
+        break;
     case 'validerEnseignant':
         $adminController->validerCompteEnseignant();
         break;
@@ -106,6 +107,24 @@ switch ($action) {
         break;
     case 'statistiques':
         $adminController->consulterStatistiques();
+        break;
+    case 'validateTeacher':
+        $adminController->validateTeacher();
+        break;
+    case 'deleteUser':
+        $adminController->deleteUser();
+        break;
+    case 'approveCourse':
+        $adminController->approveCourse();
+        break;
+    case 'deleteCourse':
+        $adminController->deleteCourse();
+        break;
+    case 'addTag':
+        $adminController->addTag();
+        break;
+    case 'deleteTag':
+        $adminController->deleteTag();
         break;
 
     // General course routes
