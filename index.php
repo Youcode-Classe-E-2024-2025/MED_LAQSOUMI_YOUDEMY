@@ -23,7 +23,6 @@ $tagController = new TagController($db);
 $action = $_GET['action'] ?? 'home';
 
 switch ($action) {
-    // Home and Authentication Routes
     case 'home':
         require_once 'views/index.php';
         break;
