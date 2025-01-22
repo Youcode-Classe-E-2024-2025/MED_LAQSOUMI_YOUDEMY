@@ -1,7 +1,6 @@
 <?php
 require_once __DIR__ . '/../models/Enseignant.php';
 require_once __DIR__ . '/../models/Course.php';
-// require_once __DIR__ . '/../models/Tag.php';
 require_once __DIR__ . '/../models/Category.php';
 
 class EnseignantController {
@@ -11,38 +10,105 @@ class EnseignantController {
 
     public function __construct($db) {
         $this->db = $db;
-        $this->enseignant = new Enseignant($this->db);
-        $this->course = new Course($this->db);
+        $this->enseignant = new Enseignant($db);
+        $this->course = new Course($db);
     }
 
-    public function ajouterCours() {
+    public function teacherDashboard() {
         if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'enseignant') {
             header('Location: index.php?action=loginPage');
             exit;
+        }
+
+        $teacherId = $_SESSION['user_id'];
+        
+        // Debug information
+        try {
+            $courses = $this->course->getTeacherCourses($teacherId);
+            $totalCourses = count($courses);
+            
+            if (empty($courses)) {
+                error_log("No courses found for teacher ID: " . $teacherId);
+            } else {
+                error_log("Found " . count($courses) . " courses for teacher ID: " . $teacherId);
+            }
+            
+            $totalStudents = $this->enseignant->getTotalStudents($teacherId);
+            error_log("Total students for teacher ID " . $teacherId . ": " . $totalStudents);
+            
+            // Debug course data
+            foreach ($courses as $course) {
+                error_log("Course ID: " . $course['id'] . ", Title: " . $course['titre']);
+            }
+            
+            require_once __DIR__ . '/../views/teacher_dashboard.php';
+            
+        } catch (Exception $e) {
+            error_log("Error in teacherDashboard: " . $e->getMessage());
+            $_SESSION['error'] = "An error occurred while loading the dashboard";
+            header('Location: index.php');
+            exit;
+        }
+    }
+
+    public function ajouterCours() {
+        // Debug information
+        if (!isset($_SESSION)) {
+            die("Session not started");
+        }
+        
+        if (!isset($_SESSION['user_id'])) {
+            die("Not logged in");
+        }
+        
+        if (!isset($_SESSION['role'])) {
+            die("No role set");
+        }
+        
+        if ($_SESSION['role'] !== 'enseignant') {
+            die("Not a teacher. Current role: " . $_SESSION['role']);
         }
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $titre = $_POST['titre'] ?? '';
             $description = $_POST['description'] ?? '';
             $contenu = $_POST['contenu'] ?? '';
+            $image = $_POST['image'] ?? 'https://placehold.co/300';
             $categorieId = $_POST['categorie_id'] ?? null;
-            $tags = isset($_POST['tags']) ? explode(',', $_POST['tags']) : [];
 
-            $result = $this->enseignant->ajouterCours($titre, $description, $contenu, $tags, $categorieId);
-            
+            if (empty($titre) || empty($description) || empty($contenu) || empty($categorieId)) {
+                $_SESSION['error'] = "Tous les champs sont obligatoires";
+                header('Location: index.php?action=ajouterCours');
+                exit;
+            }
+
+            $result = $this->course->addCourse([
+                'titre' => $titre,
+                'description' => $description,
+                'contenu' => $contenu,
+                'image' => $image,
+                'categorie_id' => $categorieId,
+                'enseignant_id' => $_SESSION['user_id']
+            ]);
+
             if ($result) {
                 $_SESSION['success'] = "Cours ajouté avec succès";
-                header('Location: index.php?action=teacherDashboard');
-                exit;
             } else {
                 $_SESSION['error'] = "Erreur lors de l'ajout du cours";
             }
+            header('Location: index.php?action=teacherDashboard');
+            exit;
         }
 
-        // Get categories and tags for the form
-        $categories = (new Category($this->db))->getAllCategories();
-        // $tags = (new Tag($this->db))->getAllTags();
-        
+        try {
+            $categories = (new Category($this->db))->getAllCategories();
+            if (empty($categories)) {
+                die("No categories found in database");
+            }
+        } catch (Exception $e) {
+            die("Error loading categories: " . $e->getMessage());
+        }
+
         require_once __DIR__ . '/../views/add_course.php';
     }
 
@@ -59,23 +125,25 @@ class EnseignantController {
             $description = $_POST['description'] ?? '';
             $contenu = $_POST['contenu'] ?? '';
             $categorieId = $_POST['categorie_id'] ?? null;
-            $tags = isset($_POST['tags']) ? explode(',', $_POST['tags']) : [];
 
-            $result = $this->enseignant->modifierCours($coursId, $titre, $description, $contenu, $tags, $categorieId);
-            
+            $result = $this->course->updateCourse($coursId, [
+                'titre' => $titre,
+                'description' => $description,
+                'contenu' => $contenu,
+                'categorie_id' => $categorieId
+            ]);
+
             if ($result) {
                 $_SESSION['success'] = "Cours modifié avec succès";
-                header('Location: index.php?action=teacherDashboard');
-                exit;
             } else {
                 $_SESSION['error'] = "Erreur lors de la modification du cours";
             }
+            header('Location: index.php?action=teacherDashboard');
+            exit;
         }
 
         $course = $this->course->getCourseById($coursId);
         $categories = (new Category($this->db))->getAllCategories();
-        // $tags = (new Tag($this->db))->getAllTags();
-        
         require_once __DIR__ . '/../views/edit_course.php';
     }
 
@@ -88,7 +156,7 @@ class EnseignantController {
         $coursId = isset($_GET['id']) ? (int)$_GET['id'] : null;
         
         if ($coursId) {
-            $result = $this->enseignant->supprimerCours($coursId);
+            $result = $this->course->deleteCourse($coursId, $_SESSION['user_id']);
             if ($result) {
                 $_SESSION['success'] = "Cours supprimé avec succès";
             } else {
@@ -107,43 +175,9 @@ class EnseignantController {
         }
 
         $coursId = isset($_GET['id']) ? (int)$_GET['id'] : null;
+        $inscriptions = $this->enseignant->getTeacherEnrollments($_SESSION['user_id']);
+        $course = $coursId ? $this->course->getCourseById($coursId) : null;
         
-        if ($coursId) {
-            $inscriptions = $this->enseignant->consulterInscriptions($coursId);
-            $course = $this->course->getCourseById($coursId);
-            
-            // If it's an AJAX request, return JSON
-            if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
-                strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
-                header('Content-Type: application/json');
-                echo json_encode([
-                    'inscriptions' => $inscriptions,
-                    'course' => $course
-                ]);
-                exit;
-            }
-            
-            // Otherwise, return the view
-            require_once __DIR__ . '/../views/course_inscriptions.php';
-        } else {
-            header('Location: index.php?action=teacherDashboard');
-            exit;
-        }
-    }
-
-    public function teacherDashboard() {
-        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'enseignant') {
-            header('Location: index.php?action=loginPage');
-            exit;
-        }
-
-        $teacherId = $_SESSION['user_id'];
-        $courses = $this->enseignant->getTeacherCourses($teacherId);
-        $enrollments = $this->enseignant->getTeacherEnrollments($teacherId);
-        $totalStudents = $this->enseignant->getTotalStudents($teacherId);
-        $totalCourses = count($courses);
-        $totalRevenue = $this->enseignant->getTotalRevenue($teacherId);
-
-        require_once __DIR__ . '/../views/teacher_dashboard.php';
+        require_once __DIR__ . '/../views/course_enrollments.php';
     }
 }

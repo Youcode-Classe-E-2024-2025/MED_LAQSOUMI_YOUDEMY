@@ -55,7 +55,7 @@ switch ($action) {
 
     // Teacher routes
     case 'teacherDashboard':
-        require_once 'views/teacher_dashboard.php';
+        $enseignantController->teacherDashboard();
         break;
     case 'ajouterCours':
         $enseignantController->ajouterCours();

@@ -2,8 +2,8 @@
 require_once __DIR__ . '/Utilisateur.php';
 
 class Enseignant extends Utilisateur {
-    public function __construct() {
-        parent::__construct();
+    public function __construct($db) {
+        parent::__construct($db);
         $this->role = 'enseignant';
     }
 
@@ -139,14 +139,22 @@ class Enseignant extends Utilisateur {
 
     public function getTeacherEnrollments($teacherId) {
         try {
-            $stmt = $this->db->prepare("
-                SELECT i.*, c.titre as cours_titre, u.nom as etudiant_nom, u.email as etudiant_email
+            $query = "
+                SELECT 
+                    i.*,
+                    c.titre as cours_titre,
+                    u.nom as etudiant_nom,
+                    u.email as etudiant_email,
+                    u.id as etudiant_id,
+                    c.id as cours_id
                 FROM inscriptions i
                 JOIN cours c ON i.cours_id = c.id
                 JOIN utilisateurs u ON i.etudiant_id = u.id
                 WHERE c.enseignant_id = ?
                 ORDER BY i.date_inscription DESC
-            ");
+            ";
+            
+            $stmt = $this->db->prepare($query);
             $stmt->execute([$teacherId]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {

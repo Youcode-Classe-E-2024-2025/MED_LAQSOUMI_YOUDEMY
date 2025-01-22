@@ -51,15 +51,19 @@ class Course {
 
 
     public function getCourseById($id) {
-        $query = "SELECT c.*, u.nom as teacher_name, cat.nom as category_name 
-                  FROM cours c
-                  JOIN utilisateurs u ON c.enseignant_id = u.id
-                  JOIN categories cat ON c.categorie_id = cat.id
-                  WHERE c.id = ?";
-        $stmt = $this->db->prepare($query);
-        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
-        $stmt->execute();
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+        try {
+            $query = "SELECT c.*, u.nom as teacher_name, cat.nom as category_name 
+                    FROM cours c
+                    JOIN utilisateurs u ON c.enseignant_id = u.id
+                    JOIN categories cat ON c.categorie_id = cat.id
+                    WHERE c.id = ?";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([$id]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log($e->getMessage());
+            return null;
+        }
     }
 
 
@@ -243,45 +247,24 @@ class Course {
 
     public function addCourse($data) {
         try {
-            $this->db->beginTransaction();
-
-            // Insert course
-            $query = "INSERT INTO cours (titre, description, contenu, enseignant_id, categorie_id, image) 
-                     VALUES (:titre, :description, :contenu, :enseignant_id, :categorie_id, :image)";
+            $query = "INSERT INTO cours (titre, description, contenu, image, enseignant_id, categorie_id) 
+                     VALUES (:titre, :description, :contenu, :image, :enseignant_id, :categorie_id)";
+            
+            // If no image provided, use a default placeholder
+            $image = $data['image'] ?? 'https://placehold.co/300';
             
             $stmt = $this->db->prepare($query);
-            $stmt->bindParam(':titre', $data['titre'], PDO::PARAM_STR);
-            $stmt->bindParam(':description', $data['description'], PDO::PARAM_STR);
-            $stmt->bindParam(':contenu', $data['contenu'], PDO::PARAM_STR);
-            $stmt->bindParam(':enseignant_id', $data['enseignant_id'], PDO::PARAM_INT);
-            $stmt->bindParam(':categorie_id', $data['categorie_id'], PDO::PARAM_INT);
-            $stmt->bindParam(':image', $data['image'], PDO::PARAM_STR);
+            $stmt->bindParam(':titre', $data['titre']);
+            $stmt->bindParam(':description', $data['description']);
+            $stmt->bindParam(':contenu', $data['contenu']);
+            $stmt->bindParam(':image', $image);
+            $stmt->bindParam(':enseignant_id', $data['enseignant_id']);
+            $stmt->bindParam(':categorie_id', $data['categorie_id']);
             
-            if (!$stmt->execute()) {
-                throw new Exception('Failed to add course');
-            }
-
-            $courseId = $this->db->lastInsertId();
-
-            // Add tags if provided
-            if (!empty($data['tags'])) {
-                $tagQuery = "INSERT INTO cours_tags (cours_id, tag_id) VALUES (:cours_id, :tag_id)";
-                $tagStmt = $this->db->prepare($tagQuery);
-                
-                foreach ($data['tags'] as $tagId) {
-                    $tagStmt->bindParam(':cours_id', $courseId, PDO::PARAM_INT);
-                    $tagStmt->bindParam(':tag_id', $tagId, PDO::PARAM_INT);
-                    if (!$tagStmt->execute()) {
-                        throw new Exception('Failed to add course tags');
-                    }
-                }
-            }
-
-            $this->db->commit();
-            return $courseId;
-        } catch (Exception $e) {
-            $this->db->rollBack();
-            throw $e;
+            return $stmt->execute();
+        } catch (PDOException $e) {
+            error_log("Error adding course: " . $e->getMessage());
+            return false;
         }
     }
 
@@ -443,6 +426,44 @@ class Course {
             return $stats;
         } catch (Exception $e) {
             throw new Exception('Failed to get teacher statistics');
+        }
+    }
+
+    public function getTeacherCourses($teacherId) {
+        try {
+            // Validate teacher ID
+            if (!$teacherId || !is_numeric($teacherId)) {
+                error_log("Invalid teacher ID: " . var_export($teacherId, true));
+                return [];
+            }
+
+            $query = "
+                SELECT c.*, cat.nom as category_name 
+                FROM cours c 
+                LEFT JOIN categories cat ON c.categorie_id = cat.id 
+                WHERE c.enseignant_id = :teacher_id
+                ORDER BY c.created_at DESC
+            ";
+            
+            $stmt = $this->db->prepare($query);
+            $stmt->bindValue(':teacher_id', $teacherId, PDO::PARAM_INT);
+            $stmt->execute();
+            
+            $courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            if (empty($courses)) {
+                error_log("No courses found for teacher ID: " . $teacherId);
+            } else {
+                error_log("Found " . count($courses) . " courses for teacher ID: " . $teacherId);
+            }
+            
+            return $courses;
+        } catch (PDOException $e) {
+            error_log("Database error in getTeacherCourses: " . $e->getMessage());
+            return [];
+        } catch (Exception $e) {
+            error_log("General error in getTeacherCourses: " . $e->getMessage());
+            return [];
         }
     }
 }

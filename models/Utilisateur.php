@@ -9,8 +9,14 @@ class Utilisateur {
     protected $role;
     protected $db;
 
-    public function __construct() {
-        $this->db = DatabaseConnection::getInstance()->getConnection();
+    public function __construct($db = null) {
+        if ($db instanceof DatabaseConnection) {
+            $this->db = $db->getConnection();
+        } elseif ($db instanceof PDO) {
+            $this->db = $db;
+        } else {
+            $this->db = DatabaseConnection::getInstance()->getConnection();
+        }
     }
 
     public function connecter($email, $motDePasse) {

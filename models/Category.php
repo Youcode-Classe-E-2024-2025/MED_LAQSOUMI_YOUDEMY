@@ -3,8 +3,6 @@
 require_once __DIR__ . '/../config/database.php';
 
 class Category {
-    private $id;
-    private $nom;
     private $db;
 
     public function __construct($db) {
@@ -17,67 +15,13 @@ class Category {
 
     public function getAllCategories() {
         try {
-            $query = "SELECT * FROM categories ORDER BY nom";
+            $query = "SELECT * FROM categories ORDER BY nom ASC";
             $stmt = $this->db->prepare($query);
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            throw new Exception('Failed to get categories');
-        }
-    }
-
-    public function getCategoryById($id) {
-        try {
-            $query = "SELECT * FROM categories WHERE id = :id";
-            $stmt = $this->db->prepare($query);
-            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
-            $stmt->execute();
-            return $stmt->fetch(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            throw new Exception('Failed to get category');
-        }
-    }
-
-    public function addCategory($nom) {
-        try {
-            $query = "INSERT INTO categories (nom) VALUES (:nom)";
-            $stmt = $this->db->prepare($query);
-            $stmt->bindParam(':nom', $nom, PDO::PARAM_STR);
-            if (!$stmt->execute()) {
-                throw new Exception('Failed to add category');
-            }
-            return $this->db->lastInsertId();
-        } catch (PDOException $e) {
-            throw new Exception('Failed to add category');
-        }
-    }
-
-    public function updateCategory($id, $nom) {
-        try {
-            $query = "UPDATE categories SET nom = :nom WHERE id = :id";
-            $stmt = $this->db->prepare($query);
-            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
-            $stmt->bindParam(':nom', $nom, PDO::PARAM_STR);
-            if (!$stmt->execute()) {
-                throw new Exception('Failed to update category');
-            }
-            return true;
-        } catch (PDOException $e) {
-            throw new Exception('Failed to update category');
-        }
-    }
-
-    public function deleteCategory($id) {
-        try {
-            $query = "DELETE FROM categories WHERE id = :id";
-            $stmt = $this->db->prepare($query);
-            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
-            if (!$stmt->execute()) {
-                throw new Exception('Failed to delete category');
-            }
-            return true;
-        } catch (PDOException $e) {
-            throw new Exception('Failed to delete category');
+            error_log("Error getting categories: " . $e->getMessage());
+            return [];
         }
     }
 }
